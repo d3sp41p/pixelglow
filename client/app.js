@@ -42,6 +42,7 @@ async function loadBoard() {
   if (b.mine) { const bits = Uint8Array.from(atob(b.mine), (ch) => ch.charCodeAt(0)); for (let k = 0; k < N; k++) if (bits[k >> 3] & (1 << (k & 7))) mine[k] = 1; }
   for (let i = 0; i < N; i++) paint(i);
   if (!flist.querySelector('.frow')) [...(b.recent || [])].reverse().forEach(feedClaim);
+  (b.recent || []).forEach((p) => noteMs(p.ms));
   onStats(b); renderMine();
 }
 
@@ -96,17 +97,40 @@ function renderTerritory() {
     `<span class="${r.you ? 'you' : ''}"><i style="background:${r.col}"></i>${r.nm} <b>${live ? (r.c / live * 100).toFixed(1) : '0.0'}%</b></span>`).join('')
     + (rest ? `<span><i style="background:${css('--surface-2')}"></i>Others <b>${(rest / live * 100).toFixed(1)}%</b></span>` : '');
 }
+// ---------------- lower sections: payout history, measured speed, token ----------------
+const msSeen = [];
+function noteMs(ms) {
+  if (!ms) return;
+  msSeen.push(ms); if (msSeen.length > 40) msSeen.shift();
+  const sorted = [...msSeen].sort((a, b) => a - b), med = sorted[sorted.length >> 1];
+  $('race-ms').textContent = med >= 1000 ? (med / 1000).toFixed(1) + ' s' : med + ' ms';
+  $('race-live').dataset.ms = med;
+}
+let lastHistory = [];
+function renderHistory(h) {
+  if (h) lastHistory = h;
+  const rows = lastHistory.filter((e) => e.pool > 0 || e.paid > 0 || e.carried > 0).slice(0, 7);
+  // the epoch in progress is always the first row, so the table is never empty
+  const now = stats ? `<tr class="cur"><td>#${stats.epoch} <span>now</span></td><td class="n">${sol(stats.pool || 0, 4)} SOL</td><td class="n">—</td><td class="n">${stats.players || 0}</td><td>in progress</td></tr>` : '';
+  $('hist').innerHTML = `<table><thead><tr><th>Epoch</th><th class="n">Pool</th><th class="n">Paid out</th><th class="n">Holders</th><th>Transaction</th></tr></thead><tbody>${now}${rows.map((e) =>
+    `<tr><td>#${e.epoch}</td><td class="n">${sol(e.pool, 4)} SOL</td><td class="n">${e.paid ? sol(e.paid, 4) + ' SOL' : '—'}</td><td class="n">${e.holders || 0}</td><td>${
+      e.sigs && e.sigs[0] ? `<a href="${explorer(e.sigs[0])}" target="_blank" rel="noopener">${short(e.sigs[0])} ↗</a>` : e.carried ? 'carried over' : '—'}</td></tr>`).join('')}</tbody></table>`;
+}
+async function loadHistory() { try { renderHistory((await api('/api/stats')).history); } catch {} }
+if (cfg.mint) $('mint-addr').innerHTML = `<a href="https://explorer.solana.com/address/${cfg.mint}${cfg.cluster === 'mainnet-beta' ? '' : '?cluster=' + cfg.cluster}" target="_blank" rel="noopener">${cfg.mint}</a>`;
+
 function onStats(s) {
   stats = s;
   $('s-pool').innerHTML = sol(s.pool || 0, 3) + '<small>SOL</small>';
   $('s-paid').innerHTML = sol(s.totalPaid || 0, 3) + '<small>SOL</small>';
   $('s-total').textContent = fmt(s.live || 0);
   $('s-players').textContent = fmt(s.players || 0);
+  renderHistory();
   $('spd').textContent = (s.tps || 0) + ' tx/s';
   $('txtotal').textContent = fmt(s.txTotal || 0);
   renderTerritory();
 }
-setInterval(() => { if (stats) $('g-next').textContent = mmss(stats.epochEnd - Date.now() / 1000); }, 250);
+setInterval(() => { if (stats) { const t = mmss(stats.epochEnd - Date.now() / 1000); $('g-next').textContent = t; $('hist-next').textContent = 'next in ' + t; } }, 250);
 
 async function refreshWallet() {
   if (!me.wallet) return;
@@ -132,13 +156,13 @@ function connectLive() {
       for (const p of m.list) {
         pending.delete(p.i); colors[p.i] = p.c; mine[p.i] = p.w === me.wallet ? 1 : 0; paint(p.i);
         if (p.w === me.wallet) toastAt(p.i, `✓ ${p.ms} ms`);
-        feedClaim(p); ping(p.i);
+        feedClaim(p); ping(p.i); noteMs(p.ms);
       }
       renderMine();
     } else if (m.t === 'epoch') {
       const mineP = me.wallet && m.payouts.find((p) => p.wallet === me.wallet);
       pushRow(`<i style="background:var(--glow)"></i><span class="op">payout</span><span class="sig">Epoch ${m.epoch} · ${m.holders} holders paid</span><span class="ms">${mineP ? '+' + sol(mineP.lamports) + ' SOL' : sol(m.paid, 3) + ' SOL'}</span>`, 'payout');
-      flash('g-estpay'); flash('g-earned'); refreshWallet();
+      flash('g-estpay'); flash('g-earned'); refreshWallet(); loadHistory();
     }
   };
   ws.onclose = () => setTimeout(connectLive, 1500);
@@ -283,6 +307,7 @@ form.addEventListener('submit', async (e) => {
 renderNav(); renderCta();
 await loadBoard();
 connectLive();
+loadHistory();
 // Reconnect silently if the wallet already trusts this site.
 for (const w of listWallets()) {
   if (w.accounts.length) { me.provider = w; me.account = w.accounts[0]; me.wallet = w.accounts[0].address;

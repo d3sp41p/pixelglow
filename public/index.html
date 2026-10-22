@@ -114,26 +114,12 @@
   [data-ui] .tleg .you{font-weight:600}
   @media (max-width:900px){
     .hero{grid-template-columns:1fr}
-    .side{contain:none}
     .me{grid-template-columns:repeat(2,1fr)}
     .me>div:first-child{grid-column:1/3}
     .card{padding:0 20px 20px}.band{margin:0 -20px}
     [data-ui] .tools .r{margin-left:0}
   }
 
-  /* board, right now */
-  .now{display:grid;grid-template-columns:5fr 7fr;gap:var(--gap) 56px;margin-top:160px;align-items:end}
-  .now h2,.how h2,.speed h2,.faq h2{font-size:var(--step-head)}
-  .now .lede{margin-top:20px;max-width:44ch}
-  .pool{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:4px}
-  .pool li{background:var(--surface);padding:18px 20px 20px}
-  .pool li:first-child{grid-column:1/3;background:var(--field);color:var(--on-field)}
-  .pool .k{font-size:var(--step-small);display:flex;align-items:center;gap:8px}
-  .pool .k::before{content:"";width:8px;height:8px;background:currentColor}
-  .pool li:first-child .k::before{background:var(--glow)}
-  .pool .v{font-size:var(--step-head);font-weight:600;letter-spacing:-.035em;line-height:1.05;margin-bottom:10px}
-  .pool li:not(:first-child) .v{font-size:var(--step-lead);letter-spacing:-.02em}
-  .pool small{font-size:var(--step-small);font-weight:500;letter-spacing:0;margin-left:4px}
   [data-ui].feed{background:var(--surface);display:flex;flex-direction:column;flex:1;min-height:320px}
   [data-ui] .fh{display:flex;align-items:center;gap:10px;padding:14px 18px;font-weight:600;background:var(--field);color:var(--on-field)}
   [data-ui] .fh .dot{width:10px;height:10px;background:var(--glow);animation:blink 1.1s steps(2) infinite}
@@ -160,195 +146,136 @@
   @keyframes ping{0%{transform:scale(1);opacity:1}100%{transform:scale(5);opacity:0}}
   [data-ui] .mark{position:absolute;width:.5%;height:calc(100%/112);pointer-events:none;outline:3px solid var(--on-field);box-shadow:0 0 0 6px color-mix(in srgb,var(--glow) 45%,transparent);opacity:0;transition:opacity .15s}
   [data-ui] .mark.on{opacity:1}
-  @media (max-width:900px){.now{grid-template-columns:1fr;margin-top:120px}.pool{margin-top:24px}[data-ui].feed{min-height:0}[data-ui] .flist{height:340px;flex:none}}
 
-  /* how it works: drag through the stages */
-  .how{margin-top:200px}
-  .how .split{display:grid;grid-template-columns:1fr 1fr;min-height:88svh;position:relative}
-  .how .clauseF{background:var(--field);color:var(--on-field);padding:44px var(--m) 160px}
-  .how .clauseF .sec{font-size:var(--step-lead);font-weight:500;letter-spacing:-.01em;color:var(--on-field-2)}
-  .how .clause{font-size:var(--step-display);margin-top:28px;max-width:13ch;transition:opacity .2s}
-  .how .clause.swap{opacity:0}
-  .how .why{max-width:40ch;margin-top:28px;transition:opacity .2s}
-  .how .why.swap{opacity:0}
-  .how .fragF{background:var(--surface);display:grid;place-items:center;padding:48px 24px 160px}
-  .how .frags{display:grid;width:min(440px,100%)}
-  .how .frags>[data-ui]{grid-area:1/1;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .3s var(--ease);visibility:hidden}
-  .how .frags>[data-ui].on{opacity:1;transform:none;visibility:visible}
-  .how .rail{position:absolute;left:var(--m);right:var(--m);bottom:36px}
-  .how .trk{position:relative;height:32px}
-  .how .trk::before,.how .trk i{content:"";position:absolute;left:0;top:12px;height:8px;background:var(--surface-2);right:0}
-  .how .trk i{right:auto;width:var(--p,0%);background:var(--glow);transition:width .25s var(--ease)}
-  .how input[type=range]{-webkit-appearance:none;appearance:none;position:relative;width:100%;height:32px;background:transparent;cursor:pointer;display:block}
-  .how input[type=range]::-webkit-slider-runnable-track{height:8px;background:transparent}
-  .how input[type=range]::-moz-range-track{height:8px;background:transparent}
-  .how input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;background:var(--glow);margin-top:-12px;border:0;border-radius:0;transition:transform .15s}
-  .how input[type=range]::-moz-range-thumb{width:32px;height:32px;background:var(--glow);border:0;border-radius:0}
-  .how input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15)}
-  .how input[type=range]:focus-visible{outline-offset:6px}
-  .how .stops{display:grid;grid-template-columns:repeat(4,1fr);margin-top:10px;font-size:var(--step-body)}
-  .how .stops button{background:none;border:0;text-align:left;cursor:pointer;padding:4px 0;color:var(--on-field-2);font-weight:500;transition:color .2s}
-  .how .stops button:nth-child(n+3){color:var(--muted)}
-  .how .stops button:nth-child(3){text-align:center}
-  .how .stops button:nth-child(2){text-align:center}
-  .how .stops button:last-child{text-align:right}
-  .how .stops button.cur{font-weight:600}
-  .how .stops button.cur:nth-child(-n+2){color:var(--on-field)}
-  .how .stops button.cur:nth-child(n+3){color:var(--ink)}
-  [data-ui].fr{background:var(--bg);padding:22px;font-size:15px}
-  [data-ui].fr .t{font-weight:600;font-size:17px;display:flex;align-items:center;gap:10px}
-  [data-ui].fr .t i{width:12px;height:12px;background:var(--ink)}
-  [data-ui].fr .row{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--surface-2)}
-  [data-ui].fr .row:last-of-type{border-bottom:0}
+  /* lower sections: the same dark panels, lime accent and live data as the board */
+  .sec{margin-top:120px}
+  .shead{display:grid;grid-template-columns:5fr 7fr;gap:12px 56px;align-items:end;margin-bottom:20px}
+  .shead h2{font-size:clamp(2rem,1.2rem + 2vw,3rem)}
+  .shead p{color:var(--muted);max-width:62ch}
+  .nums{list-style:none;display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+  .nums li{background:var(--surface);padding:18px 20px}
+  .nums .v{font-size:clamp(1.75rem,1rem + 2vw,3rem);font-weight:600;letter-spacing:-.035em;line-height:1;white-space:nowrap}
+  .nums .v small{font-size:var(--step-small);font-weight:500;letter-spacing:0;margin-left:6px;color:var(--muted)}
+  .nums li:first-child .v{color:var(--glow)}
+  .nums .k{font-size:var(--step-small);color:var(--muted);margin-top:10px}
+
+  .steps{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap)}
+  .step{background:var(--surface);padding:22px;display:flex;flex-direction:column;gap:14px}
+  .step h3{font-size:var(--step-lead);letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+  .step h3::before{content:"";width:12px;height:12px;background:var(--glow);flex:none}
+  .step p{color:var(--muted);font-size:16px;max-width:36ch}
+  [data-ui].fr{background:var(--bg);padding:16px;font-size:14px;margin-top:auto}
+  [data-ui].fr .t{font-weight:600;display:flex;align-items:center;gap:8px;color:var(--muted)}
+  [data-ui].fr .t i{width:10px;height:10px;background:var(--ink)}
+  [data-ui].fr .big{font-size:24px;font-weight:600;letter-spacing:-.03em;margin:8px 0 6px}
+  [data-ui].fr .row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--surface-2)}
   [data-ui].fr .row span:first-child{color:var(--muted)}
   [data-ui].fr .row b{font-weight:600}
-  [data-ui].fr .ok{display:inline-flex;align-items:center;gap:6px;background:var(--glow);color:var(--glow-ink);font-weight:600;padding:2px 8px;font-size:13px}
-  [data-ui].fr .big{font-size:40px;font-weight:600;letter-spacing:-.03em;margin:10px 0 4px}
-  [data-ui].fr .acts{display:flex;gap:8px;margin-top:16px}
-  [data-ui].fr .acts span{flex:1;text-align:center;padding:10px;background:var(--surface);font-weight:600}
-  [data-ui].fr .acts span.p{background:var(--ink);color:var(--bg)}
-  [data-ui].fr .tx{display:grid;grid-template-columns:12px 1fr auto;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--surface-2)}
-  [data-ui].fr .tx:last-child{border-bottom:0}
-  [data-ui].fr .tx i{width:12px;height:12px}
-  [data-ui].fr .tx .ms{font-weight:600}
-  [data-ui].fr .tx.hl{background:var(--surface);margin:0 -10px;padding:9px 10px}
-  @media (max-width:900px){
-    .how{margin-top:140px}
-    .how .split{display:flex;flex-direction:column;min-height:0}
-    .how .fragF{order:1;min-height:46svh;padding:32px 16px 24px}
-    .how .rail{order:2;position:static;background:var(--surface);padding:0 var(--m) 24px}
-    .how .clauseF{order:3;padding:36px var(--m) 44px}
-    [data-ui].fr .big{font-size:30px}
-    .how .stops{grid-template-columns:1fr 1fr;gap:4px}
-    .how .stops button,.how .stops button:nth-child(n){text-align:left;color:var(--muted)}
-    .how .stops button.cur:nth-child(n){color:var(--ink)}
-  }
+  [data-ui].fr .ok{background:var(--glow);color:var(--glow-ink);font-weight:600;padding:1px 7px;font-size:12px}
+  [data-ui].fr .acts{display:flex;gap:6px;margin-top:12px}
+  [data-ui].fr .acts span{flex:1;text-align:center;padding:8px;background:var(--surface);font-weight:600}
+  [data-ui].fr .acts span.p{background:var(--glow);color:var(--glow-ink)}
+  [data-ui].fr .tx{display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--surface-2)}
+  [data-ui].fr .tx i{width:10px;height:10px}
+  [data-ui].fr .tx .ms{color:var(--glow);font-weight:600}
 
-  /* payouts: stepped figure tiles, each cut with a pixel staircase */
-  .pay{margin-top:200px}
-  .tiles{display:grid;grid-template-columns:repeat(12,1fr);gap:8px;align-items:start}
-  .tile{display:flex;flex-direction:column;justify-content:space-between;padding:28px;clip-path:polygon(0 0,calc(100% - 48px) 0,calc(100% - 48px) 16px,calc(100% - 32px) 16px,calc(100% - 32px) 32px,calc(100% - 16px) 32px,calc(100% - 16px) 48px,100% 48px,100% 100%,0 100%)}
-  .tile .fig{font-size:var(--step-display);font-weight:600;letter-spacing:-.04em;line-height:.95}
-  .tile p{max-width:38ch}
-  .t1{grid-column:1/7;grid-row:1;min-height:max(70vh,520px);background:var(--field);color:var(--on-field)}
-  .t1 .fig{color:var(--glow)}
-  .t1 .formula{font-size:var(--step-small);margin-top:18px;color:var(--on-field-2)}
-  .pay .phead{grid-column:7/13;grid-row:1;padding-top:4px}
-  .pay .phead h2{font-size:var(--step-head)}
-  .t2{grid-column:7/10;grid-row:1;margin-top:max(14vh,120px);min-height:max(44vh,340px);background:var(--surface)}
-  .t3{grid-column:10/13;grid-row:1;margin-top:max(26vh,220px);min-height:max(34vh,260px);background:var(--mid)}
-  @media (max-width:900px){
-    .pay{margin-top:140px}
-    .tiles{grid-template-columns:1fr 1fr;gap:6px}
-    .pay .phead{grid-column:1/3;grid-row:1;padding:0 0 14px}
-    .t1{grid-column:1/3;grid-row:2;min-height:max(56vw,360px)}
-    .t2,.t3{grid-row:3;margin-top:0;min-height:300px;padding:18px}
-    .t2{grid-column:1/2}.t3{grid-column:2/3;margin-top:32px}
-    .t2 .fig,.t3 .fig{font-size:var(--step-head)}
-    .t2 p,.t3 p{font-size:var(--step-small)}
-  }
+  .paygrid{display:grid;grid-template-columns:5fr 7fr;gap:var(--gap);align-items:stretch}
+  .rules{background:var(--surface);padding:22px;display:flex;flex-direction:column;gap:18px}
+  .figs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+  .figs div{background:var(--bg);padding:16px}
+  .figs b{display:block;font-size:clamp(1.75rem,1rem + 2vw,2.75rem);font-weight:600;letter-spacing:-.035em;line-height:1;color:var(--glow);white-space:nowrap}
+  .figs span{display:block;margin-top:8px;font-size:var(--step-small);color:var(--muted)}
+  .rules p{max-width:56ch}
+  .rules code{display:block;background:var(--bg);padding:12px 14px;font-size:14px;line-height:1.5;color:var(--ink);white-space:normal}
+  [data-ui].hist{background:var(--surface);display:flex;flex-direction:column;min-height:280px}
+  [data-ui] .ph{display:flex;align-items:center;gap:10px;padding:14px 18px;font-weight:600;background:var(--surface-2)}
+  [data-ui] .ph .r{margin-left:auto;font-weight:500;font-size:var(--step-small);color:var(--muted)}
+  [data-ui].hist table{width:100%;border-collapse:collapse;font-size:14px}
+  [data-ui].hist th,[data-ui].hist td{padding:10px 18px;text-align:left;white-space:nowrap}
+  [data-ui].hist th{color:var(--muted);font-weight:500;font-size:13px}
+  [data-ui].hist td.n,[data-ui].hist th.n{text-align:right}
+  [data-ui].hist tbody tr:nth-child(odd){background:var(--bg)}
+  [data-ui].hist td a{color:var(--glow);text-decoration:none}
+  [data-ui].hist td a:hover{text-decoration:underline}
+  [data-ui].hist tr.cur td{color:var(--ink)}
+  [data-ui].hist tr.cur span{background:var(--glow);color:var(--glow-ink);font-size:11px;font-weight:600;padding:1px 6px;margin-left:6px}
+  [data-ui].hist .empty{padding:18px;color:var(--muted);font-size:var(--step-small)}
 
-  /* the band of pixels between the two halves */
-  .strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(22px,1fr));grid-auto-rows:22px;height:44px;overflow:hidden;margin-top:180px}
-  .strip span{transition:background-color 1.6s ease}
+  [data-ui].race{background:var(--surface);padding:24px;display:grid;gap:14px}
+  [data-ui].race .lane{display:grid;grid-template-columns:170px 1fr 100px;gap:16px;align-items:center}
+  [data-ui].race .nm{font-weight:600}
+  [data-ui].race .nm small{display:block;font-weight:400;color:var(--muted);font-size:13px}
+  [data-ui].race .bar{height:28px;background:var(--bg);position:relative;overflow:hidden}
+  [data-ui].race .bar i{position:absolute;inset:0;transform-origin:left;transform:scaleX(0);background:var(--surface-2)}
+  [data-ui].race .fast .bar i{background:var(--glow)}
+  [data-ui].race .live .bar i{background:#14f195}
+  [data-ui].race .t{text-align:right;font-weight:600;white-space:nowrap}
+  [data-ui].race .fast .t{color:var(--glow)}
+  [data-ui].race .note{color:var(--muted);font-size:var(--step-small);margin-top:4px}
+  [data-ui].race .note b{color:var(--glow)}
 
-  /* why 150 ms: one control, blown up */
-  .speed{height:92svh;min-height:600px;overflow:hidden;background:var(--field);color:var(--on-field);transition:background-color .45s var(--ease),color .45s var(--ease)}
-  .speed .txt{padding-top:56px;max-width:min(640px,52%)}
-  .speed h2{font-size:var(--step-head)}
-  .speed p{margin-top:16px;max-width:46ch}
-  .speed.slow{background:var(--surface);color:var(--ink)}
-  [data-ui].fin{position:absolute;left:42%;bottom:-6%;font-size:clamp(70px,14vh,150px);line-height:1}
-  [data-ui].fin .lab{font-size:.34em;font-weight:600;margin:0 0 .25em .1em;display:flex;align-items:center;gap:.3em}
-  [data-ui].fin .lab i{width:.4em;height:.4em;background:var(--glow)}
-  [data-ui].fin .track{position:relative;display:grid;grid-template-columns:1fr 1fr;width:9.6em;height:2.3em;padding:.14em;background:var(--field-2);transition:background-color .45s var(--ease)}
-  .speed.slow [data-ui].fin .track{background:var(--surface-2)}
-  [data-ui].fin button{background:transparent;border:0;font-size:.9em;font-weight:600;letter-spacing:-.04em;cursor:pointer;color:var(--glow-ink);transition:color .45s var(--ease),background-color .45s var(--ease),transform .2s var(--ease)}
-  [data-ui].fin button:active{transform:scale(.97)}
-  [data-ui].fin button[aria-pressed="true"]{background:var(--glow)}
-  [data-ui].fin button[aria-pressed="false"]{color:var(--on-field-2)}
-  .speed.slow [data-ui].fin button[aria-pressed="true"]{background:var(--ink)}
-  .speed.slow [data-ui].fin button[aria-pressed="true"]{color:var(--accent-ink)}
-  .speed.slow [data-ui].fin button[aria-pressed="false"]{color:var(--muted)}
-  [data-ui].fin button:focus-visible{outline:4px solid var(--glow);outline-offset:-10px}
-  @media (max-width:900px){
-    .speed{height:86svh}
-    .speed .txt{max-width:none;padding-top:40px}
-    [data-ui].fin{left:var(--m);bottom:4%;font-size:13.5vw}
-  }
+  .faq2{display:grid;grid-template-columns:5fr 7fr;gap:var(--gap) 56px;align-items:start}
+  .faq2 .shead{display:block;margin:0;position:sticky;top:88px}
+  .faq2 .shead p{margin-top:12px}
+  .acc{display:grid;gap:4px}
+  .acc details{background:var(--surface)}
+  .acc summary{list-style:none;cursor:pointer;padding:18px 22px;font-size:19px;font-weight:500;display:flex;justify-content:space-between;align-items:center;gap:16px;transition:background-color .15s}
+  .acc summary::-webkit-details-marker{display:none}
+  .acc summary::after{content:"+";color:var(--glow);font-weight:600;font-size:24px;line-height:1}
+  .acc details[open] summary::after{content:"\2212"}
+  .acc summary:hover{background:var(--surface-2)}
+  .acc summary:focus-visible{outline:2px solid var(--glow);outline-offset:-2px}
+  .acc details p{padding:0 22px 20px;color:var(--muted);max-width:62ch}
 
-  /* faq: index cards in a drawer */
-  .faq{margin-top:200px;display:grid;grid-template-columns:repeat(12,1fr)}
-  .faq>*{grid-column:3/11}
-  .faq h2{font-size:var(--step-head);margin-bottom:40px}
-  .drawer{list-style:none}
-  .qc{--i:0;--tw:200px;--tx:calc((100% - var(--tw)) * var(--i) / 5);position:relative;margin-top:-40px;padding-top:40px;clip-path:polygon(var(--tx) 0,calc(var(--tx) + var(--tw)) 0,calc(var(--tx) + var(--tw)) 40px,100% 40px,100% 100%,0 100%,0 40px,var(--tx) 40px)}
-  .qc:first-child{margin-top:0}
-  .qc .tab{position:absolute;top:0;left:var(--tx);width:var(--tw);height:40px;display:flex;align-items:center;padding:0 16px;font-size:var(--step-small);font-weight:600}
-  .qc button{display:block;width:100%;text-align:left;background:none;border:0;cursor:pointer;padding:22px 28px 54px;font-size:var(--step-lead);font-weight:500;line-height:1.3}
-  .qc button:focus-visible{outline:3px solid var(--glow);outline-offset:-6px}
-  .qc button span{display:inline-block;transition:transform .2s var(--ease)}
-  .qc button:hover span{transform:translateX(6px)}
-  .qc .ans{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s var(--ease)}
-  .qc .ans>div{overflow:hidden}
-  .qc .ans p{max-width:50ch;padding:0 28px 64px}
-  .qc.open button{padding-bottom:12px}
-  .qc.open .ans{grid-template-rows:1fr}
-  .qc:nth-child(3n+1){background:var(--surface)}
-  .qc:nth-child(3n+2){background:var(--mid)}
-  .qc:nth-child(3n){background:var(--field);color:var(--on-field)}
-  @media (max-width:900px){
-    .faq{margin-top:140px}.faq>*{grid-column:1/13}
-    .qc{--tw:120px;--tx:min(calc(48px * var(--i)),calc(100% - var(--tw)))}
-    .qc .tab{padding:0 12px}
-    .qc button{padding:18px 20px 48px}
-    .qc .ans p{padding:0 20px 56px}
-  }
-
-  /* check a wallet: a sentence with a blank */
-  .check{margin-top:200px}
-  .check h2{font-size:var(--step-display);line-height:1.12;max-width:16em}
-  .check input{width:7em;height:1.12em;vertical-align:-.12em;border:0;background:var(--surface);padding:0 .25em;font-size:1em;font-weight:500;letter-spacing:-.03em;color:var(--ink);transition:background-color .2s}
-  .check input::placeholder{color:var(--muted);opacity:.65}
-  .check input:focus{outline:none;background:var(--surface-2)}
-  .check h2 button{height:1.12em;vertical-align:-.12em;border:0;background:var(--accent);color:var(--accent-ink);font-size:1em;font-weight:600;letter-spacing:-.035em;padding:0 .3em;cursor:pointer;clip-path:var(--notch);transition:background-color .15s,transform .15s var(--ease)}
-  .check h2 button:hover{background:var(--accent-2)}
-  .check h2 button:active{transform:translateY(2px)}
-  .check h2 button:focus-visible{outline:4px solid var(--glow);outline-offset:-8px}
-  .check .note{margin-top:22px;font-size:var(--step-body);color:var(--muted);max-width:60ch}
-  .check .res{margin-top:28px;max-width:62ch;font-size:var(--step-lead);min-height:1.5em}
-  .check .res b{font-weight:600;background:var(--glow);color:var(--glow-ink);padding:0 .2em}
-  .check .res.err{color:#b4233c}
-  .check form.shake input{animation:shake .4s}
+  .checkbar{display:flex;gap:4px}
+  .checkbar input{flex:1;min-width:0;height:60px;border:0;background:var(--surface);padding:0 20px;font-size:18px;color:var(--ink)}
+  .checkbar input::placeholder{color:var(--muted)}
+  .checkbar input:focus{outline:2px solid var(--glow);outline-offset:-2px}
+  .checkbar .btn{height:60px}
+  .checkbar.shake input{animation:shake .4s}
   @keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
-  @media (max-width:900px){
-    .check{margin-top:140px}
-    .check input{display:block;width:100%;margin:.12em 0}
-  }
+  .res{margin-top:4px;background:var(--surface);padding:16px 20px;max-width:none}
+  .res:empty{display:none}
+  .res b{color:var(--glow);font-weight:600}
+  .res.err{color:#ff4766}
 
-  /* footer: the name, built from pixels */
-  footer{margin-top:200px;background:var(--field);color:var(--on-field);padding-top:56px;padding-bottom:max(32px,env(safe-area-inset-bottom,0px))}
-  .word{display:grid;grid-template-columns:repeat(53,1fr);gap:4px;aspect-ratio:53/7.6}
+  footer{margin-top:120px;background:var(--surface);padding-top:40px;padding-bottom:max(28px,env(safe-area-inset-bottom,0px))}
+  .word{display:grid;grid-template-columns:repeat(53,1fr);gap:3px;aspect-ratio:53/7.4;max-width:760px}
   .word span{background:transparent;transform:scale(.2);opacity:0;transition:transform .35s var(--ease),opacity .35s,background-color .3s;cursor:pointer}
   .word span.lit{opacity:1;transform:none}
   .word span.lit:hover{transform:translateY(-3px)}
-  .no-js .word span.p{opacity:1;transform:none;background:var(--glow)}
-  .fcols{display:grid;grid-template-columns:repeat(12,1fr);gap:28px;margin-top:56px}
+  .fcols{display:grid;grid-template-columns:repeat(12,1fr);gap:28px;margin-top:36px}
   .fcols nav{grid-column:span 2}
-  .fcols h3{font-size:var(--step-body);font-weight:600;letter-spacing:0;margin-bottom:12px;color:var(--on-field-2)}
-  .fcols ul{list-style:none;display:grid;gap:8px;font-size:var(--step-small)}
+  .fcols h3{font-size:var(--step-small);font-weight:600;letter-spacing:0;margin-bottom:10px;color:var(--muted)}
+  .fcols ul{list-style:none;display:grid;gap:6px;font-size:15px}
   .fcols a{text-decoration:none}
-  .fcols a:hover{text-decoration:underline;text-decoration-color:var(--glow);text-decoration-thickness:2px;text-underline-offset:4px}
-  .fcols .addr{grid-column:9/13;font-size:var(--step-small)}
-  .fcols .addr p+p{margin-top:12px;color:var(--on-field-2)}
-  .flast{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:56px;font-size:var(--step-small);color:var(--on-field-2);flex-wrap:wrap}
+  .fcols a:hover{color:var(--glow)}
+  .fcols .addr{grid-column:9/13;font-size:15px}
+  .fcols .addr p+p{margin-top:10px;color:var(--muted)}
+  .fcols code{font-size:13px;word-break:break-all}
+  .flast{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:36px;font-size:var(--step-small);color:var(--muted);flex-wrap:wrap}
   .flast .btn{font-size:var(--step-small);padding:.6em 1em}
+
   @media (max-width:900px){
-    .word{grid-template-columns:repeat(29,1fr);gap:3px;aspect-ratio:29/15.6}
-    .fcols{grid-template-columns:1fr 1fr;gap:28px 16px}
+    .sec{margin-top:88px}
+    .shead,.paygrid,.faq2{grid-template-columns:1fr}
+    .faq2 .shead{position:static;margin-bottom:16px}
+    .nums{grid-template-columns:1fr 1fr}
+    .nums li:first-child{grid-column:1/3}
+    .steps{grid-template-columns:1fr 1fr}
+    [data-ui].race .lane{grid-template-columns:1fr auto;gap:8px 12px}
+    [data-ui].race .bar{grid-column:1/3;grid-row:2}
+    .word{grid-template-columns:repeat(29,1fr);aspect-ratio:29/15.6;max-width:420px}
+    .fcols{grid-template-columns:1fr 1fr;gap:24px 16px}
     .fcols nav{grid-column:span 1}
     .fcols .addr{grid-column:1/3}
+    /* phone: title first, then the board, then the live feed */
+    .side{display:contents}
+    .card{order:-1}
+    [data-ui].feed{order:1;min-height:0}
+    [data-ui] .flist{height:340px;flex:none}
   }
+  @media (max-width:560px){.steps{grid-template-columns:1fr}.figs b{font-size:1.6rem}.checkbar{flex-direction:column}.checkbar input{flex:none}.checkbar .btn{justify-content:center}[data-ui].hist{min-height:0}}
 
   /* entrances: only when script runs, so nothing stays hidden without it */
   .js [data-rise]{opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease);transition-delay:calc(var(--d,0) * 75ms)}
@@ -357,6 +284,7 @@
     *,*::before,*::after{animation:none!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
     .js [data-rise]{opacity:1;transform:none}
     .word span{opacity:1;transform:none}
+    [data-ui].race .bar i{transform:scaleX(1)!important}
   }
   /* live app bits */
   .card .status{min-height:1.5em;margin-top:12px;font-size:var(--step-small);color:var(--muted);max-width:40ch}
@@ -434,118 +362,112 @@
     </aside>
   </section>
 
-  <section class="now wrap" aria-labelledby="now-h">
-    <div>
-      <h2 id="now-h" data-rise>The board, right now</h2>
-      <p class="lede" data-rise style="--d:1">Each pixel on the board is a real Solana transaction you can open in the explorer. Fees from $GLOW trading fill the pool, and every 10 minutes it pays out to whoever is holding ground.</p>
-    </div>
-    <ul class="pool">
-      <li data-rise style="--d:2"><div class="v" id="s-pool">0.000<small>SOL</small></div><div class="k">Pool this epoch</div></li>
-      <li data-rise style="--d:3"><div class="v" id="s-paid">0.000<small>SOL</small></div><div class="k">Paid to holders</div></li>
-      <li data-rise style="--d:4"><div class="v" id="s-players">0</div><div class="k">Players on the board</div></li>
-      <li data-rise style="--d:5"><div class="v" id="s-total">0</div><div class="k">Pixels on the board</div></li>
-      <li data-rise style="--d:6"><div class="v" id="g-mytx">0</div><div class="k">Your transactions</div></li>
+  <section class="sec wrap" id="numbers" aria-labelledby="now-h">
+    <div class="shead" data-rise><h2 id="now-h">The board, right now</h2><p>Every pixel is a Solana transaction you can open in the explorer. Fees from $GLOW trading fill the pool, and every 10 minutes it pays whoever is holding ground.</p></div>
+    <ul class="nums" data-rise style="--d:1">
+      <li><div class="v" id="s-pool">0.000<small>SOL</small></div><div class="k">Pool this epoch</div></li>
+      <li><div class="v" id="s-paid">0.000<small>SOL</small></div><div class="k">Paid to holders</div></li>
+      <li><div class="v" id="s-players">0</div><div class="k">Players on the board</div></li>
+      <li><div class="v" id="s-total">0</div><div class="k">Pixels on the board</div></li>
+      <li><div class="v" id="g-mytx">0</div><div class="k">Your transactions</div></li>
     </ul>
   </section>
 
-  <section class="how" id="how" aria-labelledby="how-h">
-        <div class="split">
-      <div class="clauseF">
-        <h2 class="sec" id="how-h">How it works</h2>
-        <h3 class="clause" id="clause">First, hold $GLOW.</h3>
-        <p class="why" id="why">Holding the coin is the ticket. No price per pixel, no deposit. Your wallet just has to hold the minimum.</p>
-      </div>
-      <div class="fragF">
-        <div class="frags">
-          <div class="fr on" data-ui data-stage="0">
-            <div class="t"><i></i>Wallet 7xKp…3fQa</div>
-            <div class="big">1,250,000 $GLOW</div>
-            <div class="row"><span>Minimum to play</span><b>10,000 $GLOW</b></div>
-            <div class="row"><span>Status</span><span class="ok">Eligible</span></div>
-            <div class="row"><span>Live pixels</span><b>0</b></div>
-          </div>
-          <div class="fr" data-ui data-stage="1">
-            <div class="t"><i></i>Approve a session key</div>
-            <div class="row"><span>Can do</span><b>Claim pixels only</b></div>
-            <div class="row"><span>Can't do</span><b>Move funds</b></div>
-            <div class="row"><span>Expires</span><b>in 24 h</b></div>
-            <div class="acts"><span>Cancel</span><span class="p">Approve once</span></div>
-          </div>
-          <div class="fr" data-ui data-stage="2">
-            <div class="t"><i></i>Your last claims</div>
-            <div class="tx hl"><i style="background:#14f195"></i><span>claim(142, 61)</span><span class="ms">147 ms</span></div>
-            <div class="tx"><i style="background:#14f195"></i><span>claim(143, 61)</span><span class="ms">151 ms</span></div>
-            <div class="tx"><i style="background:#14f195"></i><span>claim(143, 62)</span><span class="ms">144 ms</span></div>
-            <div class="tx"><i style="background:#ff4fa3"></i><span>claim(144, 62)</span><span class="ms">149 ms</span></div>
-            <div class="tx"><i style="background:#ff4fa3"></i><span>claim(144, 63)</span><span class="ms">146 ms</span></div>
-          </div>
-          <div class="fr" data-ui data-stage="3">
-            <div class="t"><i></i>Epoch 4,812 payout</div>
-            <div class="big">+0.0213 SOL</div>
-            <div class="row"><span>Your avg. live pixels</span><b>412</b></div>
-            <div class="row"><span>Everyone's avg.</span><b>14,880</b></div>
-            <div class="row"><span>Your share of 0.77 SOL</span><b>2.77%</b></div>
-            <div class="row"><span>Sent to</span><span class="ok">7xKp…3fQa</span></div>
-          </div>
+  <section class="sec wrap" id="how" aria-labelledby="how-h">
+    <div class="shead" data-rise><h2 id="how-h">How it works</h2><p>Four steps. Only the second one asks your wallet for anything, and only once.</p></div>
+    <ol class="steps">
+      <li class="step" data-rise style="--d:1">
+        <h3>Hold $GLOW</h3>
+        <p>Holding the coin is the ticket. No price per pixel, no deposit.</p>
+        <div class="fr" data-ui>
+          <div class="t"><i></i>Wallet 7xKp…3fQa</div>
+          <div class="big">1,250,000 $GLOW</div>
+          <div class="row"><span>Minimum to play</span><b>10,000</b></div>
+          <div class="row"><span>Status</span><span class="ok">Eligible</span></div>
         </div>
-      </div>
-      <div class="rail">
-        <div class="trk" id="trk"><i></i><input type="range" id="stage" min="0" max="3" step="1" value="0" aria-label="How it works, stage" aria-valuetext="Hold $GLOW"></div>
-        <div class="stops" id="stops">
-          <button class="cur" data-s="0">Hold</button><button data-s="1">Sign once</button><button data-s="2">Click</button><button data-s="3">Get paid</button>
+      </li>
+      <li class="step" data-rise style="--d:2">
+        <h3>Sign once</h3>
+        <p>Approve a session key that can only claim pixels and expires on its own.</p>
+        <div class="fr" data-ui>
+          <div class="t"><i></i>Session key</div>
+          <div class="row"><span>Can do</span><b>Claim pixels</b></div>
+          <div class="row"><span>Can't do</span><b>Move funds</b></div>
+          <div class="row"><span>Expires</span><b>in 24 h</b></div>
+          <div class="acts"><span>Cancel</span><span class="p">Approve once</span></div>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="pay wrap" id="payouts" aria-labelledby="pay-h">
-    <div class="tiles">
-      <div class="tile t1" data-rise>
-        <div class="fig">80%</div>
-        <div>
-          <p>of every epoch's pool goes to holders, split by how many of their pixels stayed alive. It is averaged over the whole epoch, so spamming pixels a second before payout earns almost nothing.</p>
-          <p class="formula">your payout = pool × 80% × your avg. live pixels ÷ everyone's</p>
+      </li>
+      <li class="step" data-rise style="--d:3">
+        <h3>Click = 1 transaction</h3>
+        <p>Every pixel is its own Solana transaction. No popups, no cooldown.</p>
+        <div class="fr" data-ui>
+          <div class="t"><i></i>Your claims</div>
+          <div class="tx"><i style="background:#14f195"></i><span>claim(142, 61)</span><span class="ms">147 ms</span></div>
+          <div class="tx"><i style="background:#14f195"></i><span>claim(143, 61)</span><span class="ms">151 ms</span></div>
+          <div class="tx"><i style="background:#14f195"></i><span>claim(143, 62)</span><span class="ms">144 ms</span></div>
+          <div class="tx"><i style="background:#ff4fa3"></i><span>claim(144, 62)</span><span class="ms">149 ms</span></div>
         </div>
+      </li>
+      <li class="step" data-rise style="--d:4">
+        <h3>Hold ground, get paid</h3>
+        <p>Every 10 minutes SOL lands in your wallet, by how many pixels stayed yours.</p>
+        <div class="fr" data-ui>
+          <div class="t"><i></i>Epoch payout</div>
+          <div class="big">+0.0213 SOL</div>
+          <div class="row"><span>Your avg. pixels</span><b>412</b></div>
+          <div class="row"><span>Your share</span><b>2.77%</b></div>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section class="sec wrap" id="payouts" aria-labelledby="pay-h">
+    <div class="shead" data-rise><h2 id="pay-h">How the pool pays</h2><p>Paid for holding ground over time, not for clicking at the last second.</p></div>
+    <div class="paygrid">
+      <div class="rules" data-rise style="--d:1">
+        <div class="figs">
+          <div><b>80%</b><span>of each epoch's pool to holders</span></div>
+          <div><b>10 min</b><span>per epoch, paid automatically</span></div>
+          <div><b>0 SOL</b><span>price per pixel</span></div>
+        </div>
+        <p>Your share is your average number of live pixels over the epoch, divided by everyone's. A pixel painted over stops counting the moment it is taken. The other 20% goes to the treasury for payout gas and upkeep.</p>
+        <code>payout = pool × 80% × your avg. live pixels ÷ all avg. live pixels</code>
       </div>
-      <div class="phead" data-rise style="--d:1"><h2 id="pay-h">How the pool pays</h2></div>
-      <div class="tile t2" data-rise style="--d:2"><div class="fig">10 min</div><p>per epoch. Payouts are pushed to wallets automatically. Nothing to claim.</p></div>
-      <div class="tile t3" data-rise style="--d:3"><div class="fig">0 SOL</div><p>price per pixel. Holding $GLOW is the only ticket.</p></div>
-    </div>
-  </section>
-
-  <div class="strip wrap" id="strip" aria-hidden="true"></div>
-
-  <section class="speed" id="speed" aria-labelledby="speed-h">
-    <div class="txt wrap">
-      <h2 id="speed-h" data-rise>At <span id="fin-v">150 ms</span>, it's a <span id="fin-w">game</span>.</h2>
-      <p id="fin-p" data-rise style="--d:1">Alpenglow brings Solana finality down to about 150 ms. A border pixel can change hands, and change back, before you've blinked. That is what makes a live war for territory playable.</p>
-    </div>
-    <div class="fin" data-ui>
-      <div class="lab"><i></i>Finality</div>
-      <div class="track">
-        <button aria-pressed="true" data-f="fast">150 ms</button>
-        <button aria-pressed="false" data-f="slow">12.8 s</button>
+      <div class="hist" data-ui data-rise style="--d:2">
+        <div class="ph">Last payouts<span class="r" id="hist-next">next in 10:00</span></div>
+        <div id="hist"><div class="empty">The first payout lands at the end of this epoch.</div></div>
       </div>
     </div>
   </section>
 
-  <section class="faq wrap" id="faq" aria-labelledby="faq-h">
-    <h2 id="faq-h" data-rise>Questions, filed</h2>
-    <ul class="drawer" id="drawer" data-rise style="--d:1">
-      <li class="qc open" style="--i:0"><span class="tab">Cost</span><button aria-expanded="true"><span>Do I pay for each pixel?</span></button><div class="ans"><div><p>No. There is no price per pixel. Holding at least the minimum $GLOW is the only requirement to draw.</p></div></div></li>
-      <li class="qc" style="--i:1"><span class="tab">Wallet</span><button aria-expanded="false"><span>Will my wallet pop up on every click?</span></button><div class="ans"><div><p>No. You connect once and approve a session key that can only claim pixels and expires on its own. After that every click signs itself.</p></div></div></li>
-      <li class="qc" style="--i:2"><span class="tab">Payouts</span><button aria-expanded="false"><span>How is my payout worked out?</span></button><div class="ans"><div><p>Every 10 minutes, 80% of the epoch's pool is split between holders by their average live pixels over that epoch. The other 20% goes to the treasury for payout gas and upkeep.</p></div></div></li>
-      <li class="qc" style="--i:3"><span class="tab">Overwrites</span><button aria-expanded="false"><span>What if someone paints over me?</span></button><div class="ans"><div><p>That pixel stops counting for you the moment it's taken, and your share drops in real time. Take it back, or grow somewhere else.</p></div></div></li>
-      <li class="qc" style="--i:4"><span class="tab">Read-only</span><button aria-expanded="false"><span>Can I check a wallet without connecting?</span></button><div class="ans"><div><p>Yes. Paste any address below to see its live pixels, share and estimated payout. Connecting is only needed to draw.</p></div></div></li>
-      <li class="qc" style="--i:5"><span class="tab">Status</span><button aria-expanded="false"><span>Is this board live on-chain yet?</span></button><div class="ans"><div><p>It runs on Solana devnet with a test $GLOW while the token launches. Every pixel and every payout is a real transaction you can open in the explorer.</p></div></div></li>
-    </ul>
+  <section class="sec wrap" id="speed" aria-labelledby="speed-h">
+    <div class="shead" data-rise><h2 id="speed-h">Why 150 ms matters</h2><p>A border pixel can change hands and change back in under a second. With the old finality that fight would be a queue, not a game.</p></div>
+    <div class="race" data-ui data-rise style="--d:1" id="race">
+      <div class="lane fast"><div class="nm">Alpenglow<small>Solana, new consensus</small></div><div class="bar"><i data-ms="150"></i></div><div class="t">~150 ms</div></div>
+      <div class="lane"><div class="nm">Solana before<small>TowerBFT finality</small></div><div class="bar"><i data-ms="12800"></i></div><div class="t">~12.8 s</div></div>
+      <div class="lane live"><div class="nm">This board<small>median, last claims</small></div><div class="bar"><i id="race-live" data-ms="1000"></i></div><div class="t" id="race-ms">— ms</div></div>
+      <p class="note">In the time the old network finalised one pixel, Alpenglow finalises <b>85</b>.</p>
+    </div>
   </section>
 
-  <section class="check wrap" id="check" aria-label="Check a wallet">
-    <form id="checkf" novalidate>
-      <h2 data-rise>Paste a wallet <input id="addr" type="text" placeholder="7xKp…3fQa" autocomplete="off" spellcheck="false" aria-label="Solana wallet address"> to see its <button type="submit">share</button></h2>
+  <section class="sec wrap faq2" id="faq" aria-labelledby="faq-h">
+    <div class="shead" data-rise><h2 id="faq-h">Questions</h2><p>Still unsure? Paste any wallet below and see what it earns.</p></div>
+    <div class="acc" data-rise style="--d:1">
+      <details open><summary>Do I pay for each pixel?</summary><p>No. There is no price per pixel, and the network fee is paid by the project. Holding at least 10,000 $GLOW is the only requirement to draw.</p></details>
+      <details><summary>Will my wallet pop up on every click?</summary><p>No. You connect once and approve a session key that can only claim pixels and expires on its own. After that every click signs itself.</p></details>
+      <details><summary>How is my payout worked out?</summary><p>Every 10 minutes, 80% of the epoch's pool is split between holders by their average live pixels over that epoch. The other 20% goes to the treasury.</p></details>
+      <details><summary>What if someone paints over me?</summary><p>That pixel stops counting for you the moment it's taken, and your share drops in real time. Take it back, or grow somewhere else.</p></details>
+      <details><summary>Can I check a wallet without connecting?</summary><p>Yes. Paste any address below to see its live pixels, share and estimated payout. Connecting is only needed to draw.</p></details>
+      <details><summary>Is this live on-chain?</summary><p>It runs on Solana devnet with a test $GLOW while the token launches. Every pixel and every payout is a real transaction you can open in the explorer.</p></details>
+    </div>
+  </section>
+
+  <section class="sec wrap" id="check" aria-labelledby="check-h">
+    <div class="shead" data-rise><h2 id="check-h">Check any wallet</h2><p>Read-only. No connection needed: drawing is the only thing that asks for a wallet.</p></div>
+    <form id="checkf" class="checkbar" novalidate data-rise style="--d:1">
+      <input id="addr" type="text" placeholder="Paste a Solana wallet address" autocomplete="off" spellcheck="false" aria-label="Solana wallet address">
+      <button class="btn" type="submit"><span class="px"></span>Check share</button>
     </form>
-    <p class="note" data-rise style="--d:1">Read-only. No connection needed: drawing is the only thing that asks for a wallet.</p>
     <p class="res" id="res" aria-live="polite"></p>
   </section>
 </main>
@@ -557,15 +479,15 @@
     <div class="word" id="word" role="img" aria-label="Pixelglow"></div>
     <div class="fcols">
       <nav aria-label="Play"><h3>Play</h3><ul><li><a href="#top">The board</a></li><li><a href="#how">How it works</a></li><li><a href="#payouts">Payouts</a></li></ul></nav>
-      <nav aria-label="Learn"><h3>Learn</h3><ul><li><a href="#speed">Why 150 ms</a></li><li><a href="#faq">FAQ</a></li><li><a href="#check">Check a wallet</a></li></ul></nav>
-      <nav aria-label="Token"><h3>$GLOW</h3><ul><li><a href="#buy">Buy on pump.fun</a></li><li><a href="#buy">Contract address</a></li><li><a href="#buy">Chart</a></li></ul></nav>
+      <nav aria-label="Learn"><h3>Learn</h3><ul><li><a href="#speed">Why 150 ms</a></li><li><a href="#faq">Questions</a></li><li><a href="#check">Check a wallet</a></li></ul></nav>
+      <nav aria-label="Token"><h3>$GLOW</h3><ul><li><a href="#buy">Buy on pump.fun</a></li><li><a href="#buy">Chart</a></li></ul></nav>
       <nav aria-label="Community"><h3>Community</h3><ul><li><a href="#buy">X</a></li><li><a href="#buy">Telegram</a></li></ul></nav>
       <div class="addr">
-        <p>A live on-chain pixel field on Solana, built for Alpenglow's ~150&nbsp;ms finality.</p>
-        <p>Rewards depend on trading fees and are not guaranteed. Nothing here is financial advice.</p>
+        <p>Token mint <code id="mint-addr">—</code></p>
+        <p>A live on-chain pixel field on Solana. Rewards depend on trading fees and are not guaranteed. Nothing here is financial advice.</p>
       </div>
     </div>
-    <div class="flast"><span>© 2026 Pixelglow</span><a class="btn inv" href="#top"><span class="px"></span>Back to the board</a></div>
+    <div class="flast"><span>© 2026 Pixelglow</span><a class="btn" href="#top"><span class="px"></span>Back to the board</a></div>
   </div>
 </footer>
 
@@ -576,40 +498,22 @@
   const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const PALETTE=['#14f195','#0fb5a8','#19a7f3','#3d6bff','#8a5cff','#d14bff','#ff4fa3','#ff4766','#ff7a2e','#ffb627','#d6ff2e',css('--field')];
 
-  // ---- pixel bands: the stripe slowly re-claims itself ----
-  const BANDCOL=[...PALETTE,css('--field'),css('--field'),css('--bg'),css('--bg')];
+  // ---- the pixel band on the card slowly re-claims itself ----
+  const BANDCOL=[...PALETTE,css('--surface'),css('--surface')];
   const pick=()=>BANDCOL[(Math.random()*BANDCOL.length)|0];
-  function fillBand(el,n){for(let k=0;k<n;k++){const s=document.createElement('span');s.style.background=pick();el.appendChild(s);}return el.children;}
-  const bands=[fillBand($('band'),30),fillBand($('strip'),260)];
-  if(!reduce)setInterval(()=>{if(document.hidden)return;bands.forEach(b=>{for(let k=0;k<3;k++)b[(Math.random()*b.length)|0].style.background=pick();});},700);
+  const band=$('band');
+  for(let k=0;k<30;k++){const s=document.createElement('span');s.style.background=pick();band.appendChild(s);}
+  if(!reduce)setInterval(()=>{if(document.hidden)return;for(let k=0;k<2;k++)band.children[(Math.random()*band.children.length)|0].style.background=pick();},700);
 
-  // ---- how it works ----
-  const STAGES=[
-    {c:'First, hold $GLOW.',n:'Hold $GLOW',w:'Holding the coin is the ticket. No price per pixel, no deposit. Your wallet just has to hold the minimum.'},
-    {c:'Then, sign once.',n:'Sign once',w:'Approve one session key that can only claim pixels and expires by itself. No popup after that.'},
-    {c:'Each click is a tx.',n:'Click',w:'Each pixel you claim is its own transaction on Solana, final in about 150 ms. No cooldown.'},
-    {c:'Hold ground, get paid.',n:'Get paid',w:'Every 10 minutes the pool pays out by how many of your pixels stayed alive. It lands in your wallet.'}];
-  const rng=$('stage'), clause=$('clause'), why=$('why'), stops=[...$('stops').children], frs=[...document.querySelectorAll('.frags>[data-ui]')];
-  let cur=0;
-  function go(s){s=+s;if(s===cur&&rng.value==s)return;cur=s;rng.value=s;$('trk').style.setProperty('--p',(s/3*100)+'%');rng.setAttribute('aria-valuetext',STAGES[s].n);
-    stops.forEach((b,k)=>b.classList.toggle('cur',k===s));frs.forEach((f,k)=>f.classList.toggle('on',k===s));
-    clause.classList.add('swap');why.classList.add('swap');
-    setTimeout(()=>{clause.textContent=STAGES[s].c;why.textContent=STAGES[s].w;clause.classList.remove('swap');why.classList.remove('swap');},reduce?0:200);}
-  rng.addEventListener('input',()=>go(rng.value));
-  stops.forEach(b=>b.addEventListener('click',()=>go(b.dataset.s)));
-
-  // ---- why 150 ms: the switch ----
-  const speed=$('speed'), finBtns=[...speed.querySelectorAll('[data-f]')];
-  const FIN={fast:{v:'150 ms',w:'game',p:'Alpenglow brings Solana finality down to about 150 ms. A border pixel can change hands, and change back, before you’ve blinked. That is what makes a live war for territory playable.'},
-             slow:{v:'12.8 s',w:'queue',p:'Before Alpenglow, finality took about 12.8 seconds. By the time your pixel was final, the border had already moved three times. You would be placing orders, not playing.'}};
-  finBtns.forEach(b=>b.addEventListener('click',()=>{const f=b.dataset.f;speed.classList.toggle('slow',f==='slow');
-    finBtns.forEach(x=>x.setAttribute('aria-pressed',x===b));$('fin-v').textContent=FIN[f].v;$('fin-w').textContent=FIN[f].w;$('fin-p').textContent=FIN[f].p;}));
-
-  // ---- faq drawer ----
-  const cards=[...document.querySelectorAll('.qc')];
-  cards.forEach(c=>c.querySelector('button').addEventListener('click',()=>{const open=!c.classList.contains('open');
-    cards.forEach(x=>{x.classList.remove('open');x.querySelector('button').setAttribute('aria-expanded','false');});
-    if(open){c.classList.add('open');c.querySelector('button').setAttribute('aria-expanded','true');}}));
+  // ---- the race: each bar fills in its real time, on a loop ----
+  const race=$('race'), bars=[...race.querySelectorAll('.bar i')];
+  function runRace(){
+    bars.forEach(b=>{b.style.transition='none';b.style.transform='scaleX(0)';});
+    void race.offsetWidth;
+    bars.forEach(b=>{const ms=+b.dataset.ms||1000;b.style.transition='transform '+ms+'ms linear';b.style.transform='scaleX(1)';});
+  }
+  let raceTimer=null;
+  const startRace=()=>{if(reduce||raceTimer)return;runRace();raceTimer=setInterval(()=>{if(!document.hidden)runRace();},14000);};
 
   // ---- footer: the name, built from pixels ----
   const G={P:['11110','10001','10001','11110','10000','10000','10000'],I:['11111','00100','00100','00100','00100','00100','11111'],
@@ -632,9 +536,9 @@
 
   // ---- entrances ----
   const io=new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)return;
-    if(e.target===word){light();}else e.target.classList.add('in');io.unobserve(e.target);}),{threshold:.15,rootMargin:'0px 0px -5% 0px'});
+    if(e.target===word)light();else if(e.target===race){e.target.classList.add('in');startRace();}else e.target.classList.add('in');
+    io.unobserve(e.target);}),{threshold:.15,rootMargin:'0px 0px -5% 0px'});
   document.querySelectorAll('[data-rise]').forEach(el=>io.observe(el));io.observe(word);
-
 })();
 </script>
 <script type="module" src="/app.js"></script>
