@@ -54,7 +54,7 @@ function globalStats() {
   };
 }
 let lastPool = 0;
-setInterval(async () => { try { lastPool = (await payouts.currentPool()).pool; } catch {} }, 5000);
+setInterval(async () => { try { lastPool = (await payouts.currentPool()).pool; } catch {} }, 30_000);
 setInterval(() => broadcast(globalStats()), 1000);
 
 // ---- blockhash for clients ----

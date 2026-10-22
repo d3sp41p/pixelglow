@@ -14,6 +14,7 @@ export class Board {
     this.acc = [];                     // pixel-seconds this epoch per wallet index
     this.last = [];                    // last time acc was brought up to date
     this.claims = [];                  // total confirmed claims per wallet index
+    this.color = [];                   // last colour each wallet used, for the territory legend
     this.epochStart = Date.now() / 1000;
     this.live = 0;
   }
@@ -23,7 +24,7 @@ export class Board {
     if (i === undefined) {
       i = this.wallets.length;
       this.wallets.push(wallet); this.index.set(wallet, i);
-      this.counts.push(0); this.acc.push(0); this.last.push(this.epochStart); this.claims.push(0);
+      this.counts.push(0); this.acc.push(0); this.last.push(this.epochStart); this.claims.push(0); this.color.push(0);
     }
     return i;
   }
@@ -33,7 +34,7 @@ export class Board {
 
   apply(x, y, c, wallet, t = Date.now() / 1000) {
     const cell = y * config.COLS + x, w = this.idx(wallet), prev = this.owners[cell];
-    this.claims[w]++;
+    this.claims[w]++; this.color[w] = c;
     if (prev === w + 1) { this.colors[cell] = c; return { cell, prevOwner: wallet }; }
     if (prev) { const p = prev - 1; this.touch(p, t); this.counts[p]--; } else this.live++;
     this.touch(w, t); this.counts[w]++;
@@ -67,7 +68,7 @@ export class Board {
   totalClaims(wallet) { const i = this.index.get(wallet); return i === undefined ? 0 : this.claims[i]; }
 
   top(n) {
-    return this.wallets.map((w, i) => ({ wallet: w, pixels: this.counts[i] }))
+    return this.wallets.map((w, i) => ({ wallet: w, pixels: this.counts[i], color: this.color[i] || 0 }))
       .filter((e) => e.pixels > 0).sort((a, b) => b.pixels - a.pixels).slice(0, n);
   }
 
@@ -83,7 +84,7 @@ export class Board {
     return {
       colors: Buffer.from(this.colors).toString('base64'),
       owners: Buffer.from(this.owners.buffer).toString('base64'),
-      wallets: this.wallets, acc: this.acc, last: this.last, claims: this.claims, epochStart: this.epochStart,
+      wallets: this.wallets, acc: this.acc, last: this.last, claims: this.claims, color: this.color, epochStart: this.epochStart,
     };
   }
 
@@ -94,7 +95,7 @@ export class Board {
     b.wallets = j.wallets; b.wallets.forEach((w, i) => b.index.set(w, i));
     b.counts = b.wallets.map(() => 0);
     for (let k = 0; k < N; k++) if (b.owners[k]) { b.counts[b.owners[k] - 1]++; b.live++; }
-    b.acc = j.acc; b.last = j.last; b.claims = j.claims || b.wallets.map(() => 0); b.epochStart = j.epochStart;
+    b.acc = j.acc; b.last = j.last; b.claims = j.claims || b.wallets.map(() => 0); b.color = j.color || b.wallets.map(() => 0); b.epochStart = j.epochStart;
     return b;
   }
 }

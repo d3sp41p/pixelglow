@@ -32,6 +32,7 @@ let sel = 1, stats = null;
 
 // ---------------- board ----------------
 const cv = $('cv'), ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+const inner = $('pixinner');
 const colors = new Uint8Array(N), mine = new Uint8Array(N), pending = new Map(); // cell -> previous colour
 function paint(i) { const x = i % COLS, y = (i / COLS) | 0, c = colors[i]; ctx.fillStyle = c ? PALETTE[c - 1] : EMPTY[(x + y) & 1]; ctx.fillRect(x * SCALE, y * SCALE, SCALE, SCALE); }
 async function loadBoard() {
@@ -40,7 +41,7 @@ async function loadBoard() {
   mine.fill(0);
   if (b.mine) { const bits = Uint8Array.from(atob(b.mine), (ch) => ch.charCodeAt(0)); for (let k = 0; k < N; k++) if (bits[k >> 3] & (1 << (k & 7))) mine[k] = 1; }
   for (let i = 0; i < N; i++) paint(i);
-  if (!flist.children.length) [...(b.recent || [])].reverse().forEach(feedClaim);
+  if (!flist.querySelector('.frow')) [...(b.recent || [])].reverse().forEach(feedClaim);
   onStats(b); renderMine();
 }
 
@@ -55,14 +56,27 @@ PALETTE.forEach((c, i) => {
 
 // ---------------- feed ----------------
 const flist = $('flist');
-function pushRow(html, cls = '') {
+function pushRow(html, cls = '', cell = null) {
+  $('fempty')?.remove();
   const el = document.createElement('div'); el.className = 'frow ' + cls; el.innerHTML = html;
-  flist.prepend(el); while (flist.children.length > 14) flist.lastChild.remove();
+  if (cell !== null) el.dataset.i = cell;
+  flist.prepend(el); while (flist.children.length > 30) flist.lastChild.remove();
 }
 function feedClaim(p) {
   const x = p.i % COLS, y = (p.i / COLS) | 0, you = p.w === me.wallet;
-  pushRow(`<i style="background:${PALETTE[p.c - 1]}"></i><span class="op">${you ? 'you' : short(p.w)}</span><a class="sig" href="${explorer(p.sig)}" target="_blank" rel="noopener">claim(${x}, ${y}) · ${short(p.sig)}</a><span class="ms">${p.ms} ms</span>`, you ? 'mine' : '');
+  pushRow(`<i style="background:${PALETTE[p.c - 1]}"></i><span class="op">${you ? 'you' : short(p.w)}</span><a class="sig" href="${explorer(p.sig)}" target="_blank" rel="noopener">claim(${x}, ${y}) <span>${short(p.sig)}</span></a><span class="ms">${p.ms} ms</span>`, you ? 'mine' : '', p.i);
 }
+// Where a transaction landed: a ring that expands from the pixel, so everyone sees the board being hit.
+const placeAt = (el, i) => { el.style.left = ((i % COLS) / COLS * 100) + '%'; el.style.top = (((i / COLS) | 0) / ROWS * 100) + '%'; };
+function ping(i) {
+  if (inner.querySelectorAll('.ping').length > 60) return;
+  const el = document.createElement('span'); el.className = 'ping'; placeAt(el, i);
+  inner.appendChild(el); setTimeout(() => el.remove(), 750);
+}
+// Hovering a row in the feed points at its pixel on the board.
+const mark = $('mark');
+flist.addEventListener('mouseover', (e) => { const r = e.target.closest('.frow[data-i]'); if (r) { placeAt(mark, +r.dataset.i); mark.classList.add('on'); } });
+flist.addEventListener('mouseleave', () => mark.classList.remove('on'));
 
 // ---------------- numbers ----------------
 function renderMine() {
@@ -73,7 +87,7 @@ function renderMine() {
 function renderTerritory() {
   if (!stats) return;
   const live = stats.live || 0, myN = mine.reduce((a, b) => a + b, 0);
-  const rows = stats.top.filter((e) => e.wallet !== me.wallet).slice(0, 4).map((e, k) => ({ nm: short(e.wallet), c: e.pixels, col: RIVALS[k] }));
+  const rows = stats.top.filter((e) => e.wallet !== me.wallet).slice(0, 4).map((e, k) => ({ nm: short(e.wallet), c: e.pixels, col: e.color ? PALETTE[e.color - 1] : RIVALS[k] }));
   if (me.wallet) rows.push({ nm: 'You', c: myN, col: PALETTE[sel - 1], you: 1 });
   rows.sort((a, b) => b.c - a.c);
   const rest = Math.max(0, live - rows.reduce((a, r) => a + r.c, 0));
@@ -89,6 +103,7 @@ function onStats(s) {
   $('s-total').textContent = fmt(s.live || 0);
   $('s-players').textContent = fmt(s.players || 0);
   $('spd').textContent = (s.tps || 0) + ' tx/s';
+  $('txtotal').textContent = fmt(s.txTotal || 0);
   renderTerritory();
 }
 setInterval(() => { if (stats) $('g-next').textContent = mmss(stats.epochEnd - Date.now() / 1000); }, 250);
@@ -117,7 +132,7 @@ function connectLive() {
       for (const p of m.list) {
         pending.delete(p.i); colors[p.i] = p.c; mine[p.i] = p.w === me.wallet ? 1 : 0; paint(p.i);
         if (p.w === me.wallet) toastAt(p.i, `✓ ${p.ms} ms`);
-        feedClaim(p);
+        feedClaim(p); ping(p.i);
       }
       renderMine();
     } else if (m.t === 'epoch') {
@@ -212,7 +227,7 @@ $('cta').addEventListener('click', (e) => {
 });
 
 // ---------------- claiming ----------------
-const inner = $('pixinner'), hov = $('hov'), coord = $('coord');
+const hov = $('hov'), coord = $('coord');
 function cellAt(ev) {
   const r = cv.getBoundingClientRect();
   return [Math.max(0, Math.min(COLS - 1, Math.floor((ev.clientX - r.left) / r.width * COLS))), Math.max(0, Math.min(ROWS - 1, Math.floor((ev.clientY - r.top) / r.height * ROWS)))];

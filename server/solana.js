@@ -54,7 +54,13 @@ export async function glowBalance(wallet, maxAgeMs = 30_000) {
   if (!config.GLOW_MINT) return 0;
   const hit = holdCache.get(wallet);
   if (hit && Date.now() - hit.t < maxAgeMs) return hit.amount;
-  const { value } = await rpc.getTokenAccountsByOwner(address(wallet), { mint: address(config.GLOW_MINT) }, { encoding: 'jsonParsed', commitment: 'confirmed' }).send();
+  let value;
+  try {
+    ({ value } = await rpc.getTokenAccountsByOwner(address(wallet), { mint: address(config.GLOW_MINT) }, { encoding: 'jsonParsed', commitment: 'confirmed' }).send());
+  } catch (e) {
+    if (hit && Date.now() - hit.t < 10 * 60_000) return hit.amount; // RPC busy: a recent answer is good enough
+    throw e;
+  }
   let raw = 0n, decimals = mintDecimals ?? 0;
   for (const acc of value) {
     const amt = acc.account.data.parsed.info.tokenAmount;
@@ -64,7 +70,7 @@ export async function glowBalance(wallet, maxAgeMs = 30_000) {
   holdCache.set(wallet, { amount, t: Date.now() });
   return amount;
 }
-export const isHolder = async (wallet, maxAgeMs) => (await glowBalance(wallet, maxAgeMs)) >= config.MIN_HOLD;
+export const isHolder = async (wallet, maxAgeMs) => config.MIN_HOLD <= 0 || (await glowBalance(wallet, maxAgeMs)) >= config.MIN_HOLD;
 
 // ---- sending and confirming ----
 export async function sendWire(base64Wire) {

@@ -34,7 +34,7 @@ export class Relay {
     if (!ok) throw new ClaimError('bad_signature', 'The wallet signature does not match.');
     this.nonces.add(nonce);
     this.sessions.set(session, { wallet, expires });
-    return { wallet, session, expires, holder: await isHolder(wallet, 0) };
+    return { wallet, session, expires, holder: await isHolder(wallet, 0).catch(() => null) };
   }
 
   sessionWallet(session) {
@@ -81,7 +81,9 @@ export class Relay {
 
     const wallet = this.sessionWallet(session);
     if (!wallet) throw new ClaimError('no_session', 'Session expired. Sign in again.');
-    if (!(await isHolder(wallet))) throw new ClaimError('not_holder', `Hold at least ${config.MIN_HOLD.toLocaleString('en-US')} $GLOW to draw.`);
+    let holder;
+    try { holder = await isHolder(wallet); } catch { throw new ClaimError('rpc_busy', 'The network is busy. Try again in a moment.'); }
+    if (!holder) throw new ClaimError('not_holder', `Hold at least ${config.MIN_HOLD.toLocaleString('en-US')} $GLOW to draw.`);
     if (!this.rateOk(wallet)) throw new ClaimError('rate', 'Slow down a little.');
 
     const signed = await partiallySignTransaction([this.relayer.keyPair], tx);

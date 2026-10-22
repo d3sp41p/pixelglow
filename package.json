@@ -10,6 +10,7 @@
     "mint": "node scripts/mint-to.js",
     "fees": "node scripts/add-fees.js",
     "e2e": "node --no-warnings scripts/e2e-devnet.js",
+    "bots": "node --no-warnings scripts/demo-bots.js",
     "build": "node scripts/build.js",
     "start": "node --no-warnings server/index.js",
     "dev": "npm run build && npm start",
