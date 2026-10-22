@@ -63,6 +63,8 @@ npm run dev                         # сборка клиента + сервер
 
 ## Переход на mainnet
 
+**Тест на mainnet до выпуска $GLOW:** `GLOW_MINT=SOL` и `MIN_HOLD=0.01` — доступ к рисованию и выплатам даёт сам SOL на кошельке. Настоящий токен потом подставляется одной переменной `GLOW_MINT=<mint>` (и `MIN_HOLD` в штуках токена). Ключи mainnet лежат в `keys/mainnet-beta/`, готовые переменные для Render — в `mainnet.env` (git-ignored). Газ за выплаты платит релеер, поэтому в пул-кошельке остаются только комиссии; держи в нём ~0.002 SOL, чтобы счёт существовал. `RELAYER_DAILY_TX_CAP` ограничивает расход релеера в сутки.
+
 1. `CLUSTER=mainnet-beta`, `RPC_URL` / `RPC_WS_URL` — платный RPC с WebSocket (Helius / Triton). Публичный RPC не выдержит нагрузку и режет по 429.
 2. `GLOW_MINT=<настоящий mint $GLOW>`.
 3. Свои ключи: положить `keys/relayer.json` и `keys/pool.json` (формат solana-keygen), пополнить релеер SOL.

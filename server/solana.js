@@ -54,6 +54,13 @@ export async function glowBalance(wallet, maxAgeMs = 30_000) {
   if (!config.GLOW_MINT) return 0;
   const hit = holdCache.get(wallet);
   if (hit && Date.now() - hit.t < maxAgeMs) return hit.amount;
+  if (config.NATIVE_GATE()) {
+    let amount;
+    try { amount = Number((await rpc.getBalance(address(wallet), { commitment: 'confirmed' }).send()).value) / 1e9; }
+    catch (e) { if (hit && Date.now() - hit.t < 10 * 60_000) return hit.amount; throw e; }
+    holdCache.set(wallet, { amount, t: Date.now() });
+    return amount;
+  }
   let value;
   try {
     ({ value } = await rpc.getTokenAccountsByOwner(address(wallet), { mint: address(config.GLOW_MINT) }, { encoding: 'jsonParsed', commitment: 'confirmed' }).send());

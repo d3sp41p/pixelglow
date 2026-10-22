@@ -117,7 +117,11 @@ function renderHistory(h) {
       e.sigs && e.sigs[0] ? `<a href="${explorer(e.sigs[0])}" target="_blank" rel="noopener">${short(e.sigs[0])} ↗</a>` : e.carried ? 'carried over' : '—'}</td></tr>`).join('')}</tbody></table>`;
 }
 async function loadHistory() { try { renderHistory((await api('/api/stats')).history); } catch {} }
-if (cfg.mint) $('mint-addr').innerHTML = `<a href="https://explorer.solana.com/address/${cfg.mint}${cfg.cluster === 'mainnet-beta' ? '' : '?cluster=' + cfg.cluster}" target="_blank" rel="noopener">${cfg.mint}</a>`;
+const live = $('faq-live');
+if (live) live.textContent = cfg.cluster === 'mainnet-beta'
+  ? `Yes, on Solana mainnet. Every pixel and every payout is a real transaction you can open in the explorer.${cfg.mint.toUpperCase() === 'SOL' ? ' Until $GLOW launches, holding ' + fmt(cfg.minHold) + ' SOL is the ticket.' : ''}`
+  : 'It runs on Solana devnet with a test $GLOW while the token launches. Every pixel and every payout is a real transaction you can open in the explorer.';
+if (cfg.mint && cfg.mint.toUpperCase() !== 'SOL') $('mint-addr').innerHTML = `<a href="https://explorer.solana.com/address/${cfg.mint}${cfg.cluster === 'mainnet-beta' ? '' : '?cluster=' + cfg.cluster}" target="_blank" rel="noopener">${cfg.mint}</a>`;
 
 function onStats(s) {
   stats = s;
@@ -219,7 +223,7 @@ async function startSession() {
   const r = await api('/api/session', { wallet: me.wallet, session, expires, nonce, signature });
   Object.assign(me, { keyPair, session, expires, holder: r.holder });
   await idbSet(me.wallet, { keyPair, session, expires });
-  setStatus(r.holder ? 'Session started. Every click now signs itself.' : `Session started, but this wallet holds less than ${fmt(cfg.minHold)} $GLOW.`, r.holder ? '' : 'err');
+  setStatus(r.holder ? 'Session started. Every click now signs itself.' : `Session started, but this wallet holds less than ${fmt(cfg.minHold)} ${cfg.symbol}.`, r.holder ? '' : 'err');
   renderCta();
 }
 
@@ -230,7 +234,7 @@ function renderNav() {
 function renderCta() {
   const b = $('cta');
   if (!me.wallet) b.innerHTML = '<span class="px"></span>Connect wallet to play';
-  else if (me.holder === false) b.innerHTML = '<span class="px"></span>Get $GLOW to play';
+  else if (me.holder === false) b.innerHTML = `<span class="px"></span>Get ${cfg.symbol} to play`;
   else if (!me.session) b.innerHTML = '<span class="px"></span>Sign once to start';
   else b.innerHTML = `<span class="px"></span>Session active · ${Math.max(1, Math.round((me.expires - Date.now() / 1000) / 3600))} h left`;
   b.dataset.state = !me.wallet ? 'connect' : me.holder === false ? 'buy' : !me.session ? 'session' : 'ready';
@@ -299,7 +303,7 @@ form.addEventListener('submit', async (e) => {
     const v = await api('/api/wallet/' + a);
     res.className = 'res';
     res.innerHTML = `${short(a)} holds <b>${fmt(v.livePixels)} live pixels</b>, ${(v.share * 100).toFixed(2)}% of this epoch so far: about ${sol(v.estPayout)} SOL at the next payout. Earned so far: ${sol(v.earned, 3)} SOL.`
-      + (v.holder ? '' : ` It holds ${v.glow === null ? 'an unknown amount of' : fmt(Math.floor(v.glow))} $GLOW, under the ${fmt(cfg.minHold)} needed to be paid.`);
+      + (v.holder ? '' : ` It holds ${v.glow === null ? 'an unknown amount of' : fmt(v.glow)} ${cfg.symbol}, under the ${fmt(cfg.minHold)} needed to be paid.`);
   } catch (err) { fail(err.message); }
 });
 

@@ -9,8 +9,8 @@ const RENT_EXEMPT_MIN = 890_880;   // a brand-new system account must receive at
 const TRANSFERS_PER_TX = 18;       // stays well under the 1232-byte transaction limit
 
 export class Payouts {
-  constructor(pool, board, state = {}) {
-    this.pool = pool; this.board = board;
+  constructor(pool, board, state = {}, gasPayer = pool) {
+    this.pool = pool; this.board = board; this.gasPayer = gasPayer;
     this.epoch = state.epoch ?? 1;
     this.epochEnd = state.epochEnd ?? Date.now() / 1000 + config.EPOCH_SEC;
     this.lastPoolBalance = state.lastPoolBalance ?? null; // lamports after the previous payout
@@ -87,7 +87,7 @@ export class Payouts {
           const batch = pay.slice(i, i + TRANSFERS_PER_TX).filter(([, a]) => a > 0);
           if (!batch.length) continue;
           try {
-            const sig = await sendInstructions(this.pool.signer, batch.map(([w, amt]) =>
+            const sig = await sendInstructions(this.gasPayer.signer, batch.map(([w, amt]) =>
               getTransferSolInstruction({ source: this.pool.signer, destination: address(w), amount: lamports(BigInt(amt)) })));
             report.sigs.push(sig);
             for (const [w, amt] of batch) {
@@ -105,7 +105,7 @@ export class Payouts {
 
         if (config.TREASURY_ADDRESS && treasuryPart > 0) {
           try {
-            await sendInstructions(this.pool.signer, [getTransferSolInstruction({ source: this.pool.signer, destination: address(config.TREASURY_ADDRESS), amount: lamports(BigInt(treasuryPart)) })]);
+            await sendInstructions(this.gasPayer.signer, [getTransferSolInstruction({ source: this.pool.signer, destination: address(config.TREASURY_ADDRESS), amount: lamports(BigInt(treasuryPart)) })]);
             report.treasury = treasuryPart;
           } catch (e) { console.error('[payout] treasury forward failed:', e.message); }
         } else report.treasury = treasuryPart; // stays in the pool wallet, not counted as new fees next epoch

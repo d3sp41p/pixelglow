@@ -83,7 +83,7 @@ export class Relay {
     if (!wallet) throw new ClaimError('no_session', 'Session expired. Sign in again.');
     let holder;
     try { holder = await isHolder(wallet); } catch { throw new ClaimError('rpc_busy', 'The network is busy. Try again in a moment.'); }
-    if (!holder) throw new ClaimError('not_holder', `Hold at least ${config.MIN_HOLD.toLocaleString('en-US')} $GLOW to draw.`);
+    if (!holder) throw new ClaimError('not_holder', `Hold at least ${config.MIN_HOLD.toLocaleString('en-US')} ${config.TOKEN_SYMBOL} to draw.`);
     if (!this.rateOk(wallet)) throw new ClaimError('rate', 'Slow down a little.');
 
     const signed = await partiallySignTransaction([this.relayer.keyPair], tx);

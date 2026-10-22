@@ -16,7 +16,7 @@ const STATE_FILE = join(config.DATA_DIR, 'state.json');
 const CLAIMS_LOG = join(config.DATA_DIR, 'claims.jsonl');
 mkdirSync(config.DATA_DIR, { recursive: true });
 
-if (!config.GLOW_MINT) console.warn('[!] GLOW_MINT is not set: run `npm run setup` first. Holder checks will fail.');
+if (!config.GLOW_MINT) console.warn('[!] GLOW_MINT is not set: run `npm run setup` (devnet) or set GLOW_MINT. Holder checks will fail.');
 
 // ---- state ----
 const relayer = await loadOrCreateKey('relayer');
@@ -25,7 +25,7 @@ const saved = existsSync(STATE_FILE) ? JSON.parse(readFileSync(STATE_FILE, 'utf8
 const board = saved.board ? Board.fromJSON(saved.board) : new Board();
 const relay = new Relay(relayer);
 for (const [s, v] of Object.entries(saved.sessions || {})) relay.sessions.set(s, v);
-const payouts = new Payouts(pool, board, saved.payouts);
+const payouts = new Payouts(pool, board, saved.payouts, relayer);
 const stats = { txTotal: saved.txTotal || 0, recent: [] }; // recent: confirmation timestamps for tx/s
 const lastClaims = saved.lastClaims || []; // newest first, for the feed on page load
 
@@ -54,6 +54,8 @@ function globalStats() {
   };
 }
 let lastPool = 0;
+// On the very first start this fixes the pool's starting balance: only SOL arriving after it counts as fees.
+try { lastPool = (await payouts.currentPool()).pool; } catch (e) { console.warn('[pool] first balance read failed:', e.message); }
 setInterval(async () => { try { lastPool = (await payouts.currentPool()).pool; } catch {} }, 30_000);
 setInterval(() => broadcast(globalStats()), 1000);
 
@@ -131,7 +133,7 @@ const server = createServer(async (req, res) => {
   if (p === '/health') { res.writeHead(200); return res.end('ok'); }
   try {
     if (p === '/api/config') return json(res, 200, {
-      cluster: config.CLUSTER, relayer: relayer.address, pool: pool.address, mint: config.GLOW_MINT,
+      cluster: config.CLUSTER, relayer: relayer.address, pool: pool.address, mint: config.GLOW_MINT, symbol: config.TOKEN_SYMBOL,
       cols: config.COLS, rows: config.ROWS, palette: config.PALETTE, epochSec: config.EPOCH_SEC,
       holderShare: config.HOLDER_SHARE, minHold: config.MIN_HOLD, sessionTtl: config.SESSION_TTL_SEC,
       blockhash: chain.blockhash, lastValidBlockHeight: chain.lastValidBlockHeight,
