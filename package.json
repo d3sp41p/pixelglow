@@ -1,0 +1,32 @@
+{
+  "name": "pixelglow",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pixelglow: live on-chain pixel field on Solana",
+  "scripts": {
+    "test": "node --no-warnings --test",
+    "setup": "node scripts/setup-devnet.js",
+    "mint": "node scripts/mint-to.js",
+    "fees": "node scripts/add-fees.js",
+    "e2e": "node --no-warnings scripts/e2e-devnet.js",
+    "build": "node scripts/build.js",
+    "start": "node --no-warnings server/index.js",
+    "dev": "npm run build && npm start",
+    "railway-env": "node scripts/railway-env.js"
+  },
+  "dependencies": {
+    "@solana-program/memo": "0.15.0",
+    "@solana-program/system": "0.15.0",
+    "@solana-program/token": "0.17.0",
+    "@solana/kit": "8.4.0",
+    "ws": "8.18.3"
+  },
+  "devDependencies": {
+    "@wallet-standard/app": "1.1.0",
+    "esbuild": "0.25.10"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

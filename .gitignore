@@ -1,0 +1,10 @@
+node_modules/
+# private keys of the relayer, pool and mint authority: never commit, never share
+keys/
+# board state, sessions, payout ledger, claims log
+data/
+data-*/
+railway.env
+.vercel/
+# build output
+public/app.js
