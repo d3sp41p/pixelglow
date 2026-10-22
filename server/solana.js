@@ -95,9 +95,11 @@ export function waitForConfirmation(signature, timeoutMs = 60_000) {
     })();
   });
 }
-let pollDelay = 1000;
+// One batched request for everything pending, every 400 ms while anything is pending (≈2.5 req/s at most).
+const POLL_MS = 400;
+let pollDelay = POLL_MS;
 async function pollStatuses() {
-  const sigs = [...pending.keys()].filter((s) => Date.now() - pending.get(s).t0 > 1500).slice(0, 256);
+  const sigs = [...pending.keys()].filter((s) => Date.now() - pending.get(s).t0 > 300).slice(0, 256);
   if (sigs.length) {
     try {
       const { value } = await rpc.getSignatureStatuses(sigs).send();
@@ -107,7 +109,7 @@ async function pollStatuses() {
         if (st && st.err) p.resolve({ ok: false, err: st.err });
         else if (st && (st.confirmationStatus === 'confirmed' || st.confirmationStatus === 'finalized')) p.resolve({ ok: true, slot: Number(st.slot) });
       });
-      pollDelay = 1000;
+      pollDelay = POLL_MS;
     } catch (e) { pollDelay = Math.min(8000, pollDelay * 2); if (!/429/.test(e.message)) console.warn('[confirm] status poll failed:', e.message); }
   }
   for (const [, p] of pending) if (Date.now() - p.t0 > p.timeoutMs) p.resolve({ ok: false, err: 'timeout' });
