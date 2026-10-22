@@ -9,7 +9,7 @@ import { config } from '../config.js';
 import { Board } from './board.js';
 import { ClaimError, Relay } from './relay.js';
 import { Payouts } from './payouts.js';
-import { chain, diag, explorerTx, glowBalance, loadOrCreateKey, refreshBlockhash, sendWire, solBalance, waitForConfirmation } from './solana.js';
+import { chain, diag, slotNow, explorerTx, glowBalance, loadOrCreateKey, refreshBlockhash, sendWire, solBalance, waitForConfirmation } from './solana.js';
 
 const PUBLIC = fileURLToPath(new URL('../public/', import.meta.url));
 const STATE_FILE = join(config.DATA_DIR, 'state.json');
@@ -82,17 +82,19 @@ setInterval(() => {
 // The pixel is shown as soon as its transaction is in a block ('processed'); confirmation follows in the background
 // and the pixel is put back if it never comes.
 const lat = { land: [], confirm: [] }; // recent timings in ms
+const traces = []; // per-claim breakdown of the last claims, newest first
 const noteLat = (k, ms) => { lat[k].push(ms); if (lat[k].length > 200) lat[k].shift(); };
 const median = (xs) => { if (!xs.length) return null; const s = [...xs].sort((p, q) => p - q); return s[s.length >> 1]; };
 async function claim(wire) {
   const t0 = Date.now();
   const c = await relay.coSign(wire);
+  const tr = { sign: Date.now() - t0, send: null, via: null, sends: 1, slotAtSend: slotNow.slot, slots: null, land: null, confirm: null };
   // First send now; re-send only while it is not in a block yet (most claims land well before the first re-send,
   // so this costs no extra RPC calls), and never let one rate-limited send fail the click.
   let via = null; // the endpoint that took the first send; re-sends go elsewhere
-  sendWire(c.wire).then((name) => { via = name; }, (e) => console.warn('[claim] send failed, will retry:', e.message));
+  sendWire(c.wire).then((name) => { via = name; tr.via = name; tr.send = Date.now() - t0; tr.slotAtSend = slotNow.slot; }, (e) => console.warn('[claim] send failed, will retry:', e.message));
   let resend = null;
-  const startResend = setTimeout(() => { resend = setInterval(() => sendWire(c.wire, via).catch(() => {}), 900); }, 800);
+  const startResend = setTimeout(() => { resend = setInterval(() => { tr.sends++; sendWire(c.wire, via).catch(() => {}); }, 900); }, 800);
   const stopResend = () => { clearTimeout(startResend); if (resend) clearInterval(resend); };
   const confirmed = waitForConfirmation(c.signature, 30_000, 'confirmed');
   const landed = await Promise.race([waitForConfirmation(c.signature, 30_000, 'processed'), confirmed]);
@@ -100,13 +102,15 @@ async function claim(wire) {
   if (!landed.ok) throw new ClaimError('failed', 'The transaction did not land. Try again.');
   const ms = Date.now() - t0;
   noteLat('land', ms);
+  tr.land = ms; tr.slots = landed.slot && tr.slotAtSend ? landed.slot - tr.slotAtSend : null;
+  traces.unshift(tr); traces.length = Math.min(traces.length, 20);
   const prev = board.apply(c.x, c.y, c.c, c.wallet);
   stats.txTotal++; stats.recent.push(Date.now());
   const px = { i: c.y * config.COLS + c.x, c: c.c, w: c.wallet, sig: c.signature, ms };
   pxQueue.push(px); lastClaims.unshift(px); lastClaims.length = Math.min(lastClaims.length, 14);
   confirmed.then((res) => {
     if (res.ok) {
-      noteLat('confirm', Date.now() - t0);
+      noteLat('confirm', Date.now() - t0); tr.confirm = Date.now() - t0;
       appendFileSync(CLAIMS_LOG, JSON.stringify({ t: Date.now(), sig: c.signature, slot: res.slot, w: c.wallet, x: c.x, y: c.y, c: c.c }) + '\n');
     } else if (board.restore(prev.cell, c.wallet, { owner: prev.prevOwner, color: prev.prevColor })) {
       console.warn('[claim] did not confirm, pixel restored:', c.signature, JSON.stringify(res.err));
@@ -168,7 +172,7 @@ const server = createServer(async (req, res) => {
         ...globalStats(),
       });
     }
-    if (p === '/api/stats') return json(res, 200, { ...globalStats(), latency: { landMs: median(lat.land), confirmMs: median(lat.confirm), slowest: Math.max(0, ...lat.land), samples: lat.land.length }, diag, history: payouts.history.slice(0, 10).map(({ payouts: _, ...h }) => h) });
+    if (p === '/api/stats') return json(res, 200, { ...globalStats(), latency: { landMs: median(lat.land), confirmMs: median(lat.confirm), slowest: Math.max(0, ...lat.land), samples: lat.land.length }, diag, traces, slot: slotNow, history: payouts.history.slice(0, 10).map(({ payouts: _, ...h }) => h) });
     if (p.startsWith('/api/wallet/')) {
       const w = decodeURIComponent(p.slice('/api/wallet/'.length));
       if (!isAddress(w)) return json(res, 400, { error: 'bad_address', message: 'That is not a Solana address.' });
