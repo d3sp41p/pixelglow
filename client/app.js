@@ -117,11 +117,21 @@ function renderHistory(h) {
       e.sigs && e.sigs[0] ? `<a href="${explorer(e.sigs[0])}" target="_blank" rel="noopener">${short(e.sigs[0])} ↗</a>`  : e.paid ? '—' : 'nobody on the board'}</td></tr>`).join('')}</tbody></table>`;
 }
 async function loadHistory() { try { renderHistory((await api('/api/stats')).history); } catch {} }
-const live = $('faq-live');
-if (live) live.textContent = cfg.cluster === 'mainnet-beta'
-  ? `Yes, on Solana mainnet. Every pixel and every payout is a real transaction you can open in the explorer.${cfg.mint.toUpperCase() === 'SOL' ? ' Until $GLOW launches, holding ' + fmt(cfg.minHold) + ' SOL is the ticket.' : ''}`
-  : 'It runs on Solana devnet with a test $GLOW while the token launches. Every pixel and every payout is a real transaction you can open in the explorer.';
-if (cfg.mint && cfg.mint.toUpperCase() !== 'SOL') $('mint-addr').innerHTML = `<a href="https://explorer.solana.com/address/${cfg.mint}${cfg.cluster === 'mainnet-beta' ? '' : '?cluster=' + cfg.cluster}" target="_blank" rel="noopener">${cfg.mint}</a>`;
+// Token links and copy follow the launch: before it the board is read-only, after it everything points at $GLOW.
+function applyMint() {
+  const live = $('faq-live'), m = cfg.mint;
+  if (live) live.textContent = !m
+    ? 'Almost: drawing opens the moment $GLOW launches on pump.fun. The board, the feed and the payouts already run on Solana mainnet.'
+    : cfg.cluster === 'mainnet-beta' ? 'Yes, on Solana mainnet. Every pixel and every payout is a real transaction you can open in the explorer.'
+    : 'It runs on Solana devnet with a test $GLOW. Every pixel and every payout is a real transaction you can open in the explorer.';
+  $('mint-addr').innerHTML = m ? `<a href="https://explorer.solana.com/address/${m}${cfg.cluster === 'mainnet-beta' ? '' : '?cluster=' + cfg.cluster}" target="_blank" rel="noopener">${m}</a>` : 'at launch';
+  for (const [id, url] of [['buy-link', m && `https://pump.fun/coin/${m}`], ['chart-link', m && `https://dexscreener.com/solana/${m}`]]) {
+    const a = $(id);
+    if (url) { a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = id === 'buy-link' ? 'Buy on pump.fun' : 'Chart'; }
+    else { a.removeAttribute('href'); a.textContent = (id === 'buy-link' ? 'Buy on pump.fun' : 'Chart') + ' · at launch'; }
+  }
+}
+applyMint();
 
 function onStats(s) {
   stats = s;
@@ -157,6 +167,7 @@ function connectLive() {
     const m = JSON.parse(ev.data);
     if (m.t === 'bh') { chain.blockhash = m.blockhash; chain.lastValidBlockHeight = m.lastValidBlockHeight; if (m.cuPrice) chain.cuPrice = m.cuPrice; }
     else if (m.t === 'stats') onStats(m);
+    else if (m.t === 'launch') { cfg.mint = m.mint; applyMint(); renderCta(); refreshWallet(); setStatus('$GLOW is live. The board is open: draw!'); }
     else if (m.t === 'px') {
       for (const p of m.list) {
         pending.delete(p.i); colors[p.i] = p.c; mine[p.i] = p.w === me.wallet ? 1 : 0; paint(p.i);
@@ -244,11 +255,12 @@ function renderNav() {
 }
 function renderCta() {
   const b = $('cta');
-  if (!me.wallet) b.innerHTML = '<span class="px"></span>Connect wallet to play';
+  if (!cfg.mint) b.innerHTML = '<span class="px"></span>Opens at $GLOW launch';
+  else if (!me.wallet) b.innerHTML = '<span class="px"></span>Connect wallet to play';
   else if (me.holder === false) b.innerHTML = `<span class="px"></span>Get ${cfg.symbol} to play`;
   else if (!me.session) b.innerHTML = '<span class="px"></span>Sign once to start';
   else b.innerHTML = `<span class="px"></span>Session active · ${Math.max(1, Math.round((me.expires - Date.now() / 1000) / 3600))} h left`;
-  b.dataset.state = !me.wallet ? 'connect' : me.holder === false ? 'buy' : !me.session ? 'session' : 'ready';
+  b.dataset.state = !cfg.mint ? 'prelaunch' : !me.wallet ? 'connect' : me.holder === false ? 'buy' : !me.session ? 'session' : 'ready';
 }
 const statusEl = $('status');
 function setStatus(text, kind = '') { statusEl.textContent = text; statusEl.className = 'status ' + kind; }
@@ -260,6 +272,7 @@ $('connect').addEventListener('click', (e) => { e.preventDefault(); guarded(me.w
 $('cta').addEventListener('click', (e) => {
   const st = $('cta').dataset.state;
   if (st === 'loading') return;
+  if (st === 'prelaunch') { setStatus('Drawing opens the moment $GLOW launches on pump.fun. This page switches on by itself.'); return; }
   if (st === 'buy') { $('buy').scrollIntoView({ behavior: 'smooth' }); return; }
   if (st === 'connect') guarded(async () => { if (await connect() && me.holder !== false) await startSession(); });
   else if (st === 'session') guarded(startSession);
@@ -279,6 +292,7 @@ function toastAt(i, text) {
 cv.addEventListener('pointermove', (ev) => { const [x, y] = cellAt(ev); hov.style.transform = `translate(${x * 100}%,${y * 100}%)`; coord.textContent = `x ${x} · y ${y}`; });
 cv.addEventListener('click', async (ev) => {
   const [x, y] = cellAt(ev), i = y * COLS + x;
+  if (!cfg.mint) { setStatus('Drawing opens the moment $GLOW launches on pump.fun.', 'err'); return; }
   if (!me.session) { setStatus(me.wallet ? 'Sign once to start claiming.' : 'Connect a wallet to claim pixels.', 'err'); $('cta').classList.remove('nudge'); void $('cta').offsetWidth; $('cta').classList.add('nudge'); return; }
   if (!chain.blockhash) return setStatus('Waiting for the network…', 'err');
   if (!pending.has(i)) pending.set(i, colors[i]);

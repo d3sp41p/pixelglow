@@ -139,3 +139,17 @@ test('a claim that never confirms puts the pixel back, unless it moved on', () =
   assert.equal(b.restore(r2.cell, 'B', { owner: r2.prevOwner, color: r2.prevColor }, 14), false);
   assert.equal(b.livePixels('C'), 1);
 });
+
+test('launch watcher: picks the mint from a real pump.fun create, ignores other wallets and trades', async () => {
+  const { findLaunchedMint } = await import('../server/launch.js');
+  const { readFileSync } = await import('node:fs');
+  const fx = JSON.parse(readFileSync(new URL('./fixtures/pump-create.json', import.meta.url), 'utf8'));
+  const dev = fx.tx.transaction.message.accountKeys[0].pubkey;
+  assert.equal(findLaunchedMint(fx.tx, dev), fx.mint);                       // the dev's own launch
+  assert.equal(findLaunchedMint(fx.tx, 'So11111111111111111111111111111111111111112'), null); // somebody else's
+  const trade = structuredClone(fx.tx);
+  trade.meta.logMessages = trade.meta.logMessages.map((l) => l.replace(/Instruction: CreateV2$/, 'Instruction: Buy'));
+  assert.equal(findLaunchedMint(trade, dev), null);                          // a buy is not a launch
+  const failed = structuredClone(fx.tx); failed.meta.err = { InstructionError: [0, 'Custom'] };
+  assert.equal(findLaunchedMint(failed, dev), null);                         // a failed create is not a launch
+});

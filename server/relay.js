@@ -94,6 +94,7 @@ export class Relay {
     if (!sessionSig || !(await verifySignature(await getPublicKeyFromAddress(session), sessionSig, tx.messageBytes)))
       throw new ClaimError('unsigned', 'The session key did not sign this claim.');
 
+    if (!config.GLOW_MINT) throw new ClaimError('not_launched', 'Drawing opens the moment $GLOW launches.');
     const wallet = this.sessionWallet(session);
     if (!wallet) throw new ClaimError('no_session', 'Session expired. Sign in again.');
     let holder;

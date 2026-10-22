@@ -9,6 +9,7 @@ import { config } from '../config.js';
 import { Board } from './board.js';
 import { ClaimError, Relay } from './relay.js';
 import { Payouts } from './payouts.js';
+import { LaunchWatcher } from './launch.js';
 import { chain, diag, slotNow, startSlotTracking, explorerTx, glowBalance, loadOrCreateKey, refreshBlockhash, sendWire, solBalance, waitForConfirmation } from './solana.js';
 
 const PUBLIC = fileURLToPath(new URL('../public/', import.meta.url));
@@ -16,7 +17,6 @@ const STATE_FILE = join(config.DATA_DIR, 'state.json');
 const CLAIMS_LOG = join(config.DATA_DIR, 'claims.jsonl');
 mkdirSync(config.DATA_DIR, { recursive: true });
 
-if (!config.GLOW_MINT) console.warn('[!] GLOW_MINT is not set: run `npm run setup` (devnet) or set GLOW_MINT. Holder checks will fail.');
 
 // ---- state ----
 const relayer = await loadOrCreateKey('relayer');
@@ -67,6 +67,15 @@ async function blockhashLoop() {
 }
 await blockhashLoop();
 startSlotTracking();
+
+// ---- launch: until $GLOW exists the board is read-only; the watcher opens it the moment the dev wallet launches ----
+const launch = new LaunchWatcher((mint) => {
+  config.GLOW_MINT = mint;
+  broadcast({ t: 'launch', mint });
+});
+if (!config.GLOW_MINT && launch.mint) config.GLOW_MINT = launch.mint;
+launch.start();
+if (!config.GLOW_MINT) console.log(config.DEV_WALLET ? '[launch] board is read-only until $GLOW launches' : '[!] neither GLOW_MINT nor DEV_WALLET is set: the board stays read-only');
 
 // ---- epochs ----
 setInterval(() => {
@@ -159,7 +168,7 @@ const server = createServer(async (req, res) => {
   if (p === '/health') { res.writeHead(200); return res.end('ok'); }
   try {
     if (p === '/api/config') return json(res, 200, {
-      cluster: config.CLUSTER, relayer: relayer.address, pool: pool.address, mint: config.GLOW_MINT, symbol: config.TOKEN_SYMBOL,
+      cluster: config.CLUSTER, relayer: relayer.address, pool: pool.address, mint: config.GLOW_MINT, launched: !!config.GLOW_MINT, symbol: config.TOKEN_SYMBOL,
       cols: config.COLS, rows: config.ROWS, palette: config.PALETTE, epochSec: config.EPOCH_SEC,
       holderShare: config.HOLDER_SHARE, dripPerDay: config.DRIP_PER_DAY, dripPerEpoch: config.DRIP_RATE, minHold: config.MIN_HOLD, sessionTtl: config.SESSION_TTL_SEC,
       blockhash: chain.blockhash, lastValidBlockHeight: chain.lastValidBlockHeight, cuPrice: chain.cuPrice,
@@ -207,6 +216,6 @@ server.listen(config.PORT, async () => {
   console.log(`Pixelglow on http://localhost:${config.PORT}  (${config.CLUSTER})`);
   console.log(`  relayer ${relayer.address}  ${(await solBalance(relayer.address).catch(() => 0)) / 1e9} SOL`);
   console.log(`  pool    ${pool.address}  ${(await solBalance(pool.address).catch(() => 0)) / 1e9} SOL`);
-  console.log(`  mint    ${config.GLOW_MINT || '(not set)'}   epoch ${config.EPOCH_SEC}s`);
+  console.log(`  mint    ${config.GLOW_MINT || '(waiting for launch' + (config.DEV_WALLET ? ' by ' + config.DEV_WALLET : '') + ')'}   epoch ${config.EPOCH_SEC}s`);
   console.log(`  tx log  ${explorerTx('<signature>')}`);
 });

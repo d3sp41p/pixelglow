@@ -26,9 +26,12 @@ export const config = {
 
   // ---- token ----
   // Filled in by `npm run setup` on devnet. On mainnet: the real $GLOW mint.
-  // 'SOL' = gate by the wallet's own SOL balance instead of a token (handy for testing before $GLOW exists).
   GLOW_MINT: env('GLOW_MINT', ''),
-  TOKEN_SYMBOL: env('TOKEN_SYMBOL', ''),        // shown in messages; defaults to SOL or $GLOW
+  TOKEN_SYMBOL: env('TOKEN_SYMBOL', '$GLOW'),   // shown in messages
+  // Before launch: the wallet that will create $GLOW on pump.fun. The server watches it and takes the token it
+  // creates as GLOW_MINT; until then the board is read-only.
+  DEV_WALLET: env('DEV_WALLET', ''),
+  LAUNCH_POLL_MS: num('LAUNCH_POLL_MS', 4000),
   MIN_HOLD: num('MIN_HOLD', 10_000),             // whole $GLOW a wallet must hold to draw and to be paid (§2.5)
 
   // ---- board ----
@@ -62,11 +65,11 @@ export const config = {
 };
 
 // `npm run setup` writes the devnet mint here so it does not have to be copied by hand.
-config.NATIVE_GATE = () => config.GLOW_MINT.toUpperCase() === 'SOL';
 if (!config.GLOW_MINT && config.CLUSTER === 'devnet') {
   try { config.GLOW_MINT = JSON.parse(readFileSync(join(config.KEYS_DIR, 'devnet.json'), 'utf8')).mint || ''; } catch {}
 }
-if (!config.TOKEN_SYMBOL) config.TOKEN_SYMBOL = config.NATIVE_GATE() ? 'SOL' : '$GLOW';
 // Per-epoch share that compounds to DRIP_PER_DAY over a day: 1 - (1 - daily)^(epoch / day). 20%/day at 10 min ≈ 0.155%.
 config.DRIP_RATE = 1 - Math.pow(1 - config.DRIP_PER_DAY, config.EPOCH_SEC / 86_400);
 if (process.env.DRIP_RATE) console.warn('[config] DRIP_RATE is no longer used and is ignored; set DRIP_PER_DAY instead.');
+// The SOL test mode is gone: an old GLOW_MINT=SOL left in the host's settings means "no token yet".
+if (config.GLOW_MINT.toUpperCase() === 'SOL') { console.warn('[config] GLOW_MINT=SOL is no longer supported and is ignored; remove it.'); config.GLOW_MINT = ''; }
