@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="a/place">
+  <!-- isometric cube: pink top, green left, violet right, with pixel sparkles on the lit top -->
+  <polygon points="50,8 90,31 50,54 10,31" fill="#ff86c8"/>
+  <polygon points="10,31 50,54 50,98 10,75" fill="#13b26e"/>
+  <polygon points="50,54 90,31 90,75 50,98" fill="#7b52e0"/>
+  <g fill="#ffb3dc">
+    <rect x="44" y="17" width="3" height="3"/><rect x="58" y="22" width="3" height="3"/><rect x="36" y="27" width="2.5" height="2.5"/>
+    <rect x="64" y="33" width="2.5" height="2.5"/><rect x="49" y="37" width="3" height="3"/><rect x="28" y="33" width="2" height="2"/>
+    <rect x="72" y="28" width="2" height="2"/><rect x="54" y="45" width="2" height="2"/>
+  </g>
+</svg>

@@ -5,18 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>a/place — claim the chain</title>
 <meta name="description" content="a/place is a live on-chain pixel field on Solana, lit for Alpenglow. Hold a/place, click a pixel — one transaction, final in ~150 ms. Keep your pixels alive to earn from the pool.">
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="a/place — claim the chain">
+<meta property="og:description" content="A live pixel field on Solana. Every click is one transaction. Hold ground, earn from the pool.">
+<meta property="og:image" content="https://alpenplace.fun/og.png">
+<meta property="og:url" content="https://alpenplace.fun/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://alpenplace.fun/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   /* a/place. One motif: the square pixel. It is the button, the bullet, the stripe, the tile corner and the closing mark. */
   :root{
-    /* Alpenglow: the rose and peach light that hits snowy peaks after sunset, over a night-blue sky */
-    --bg:#0b0f26; --surface:#141a3a; --surface-2:#222a5c; --mid:#2c2150;
-    --ink:#f7efe8; --muted:#aeb0d6; --accent:#ffb38a; --accent-ink:#1a0f2e; --accent-2:#ffc7a6;
-    --field:#ad3f6c; --on-field:#fff5ef; --on-field-2:#ffe3ea; --field-2:#8e3358;
-    --glow:#ffb38a; --glow-ink:#1a0f2e;
-    --px-a:#161c40; --px-b:#121838; --px-bg:#141a3b; --rival-1:#4a4f86; --rival-2:#6c5f9a; --rival-3:#3b3f6e; --rival-4:#8a7fb5;
+    /* The logo's colours: a near-black grid, the cube's pink top (the alpenglow), its green and violet sides */
+    --bg:#0c0b11; --surface:#16151d; --surface-2:#24222f; --mid:#2c1f3f;
+    --ink:#f6f3f8; --muted:#aaa6ba; --accent:#ff86c8; --accent-ink:#1c0b17; --accent-2:#ff9fd4;
+    --field:#7b52e0; --on-field:#ffffff; --on-field-2:#f6f2ff; --field-2:#6640c9;
+    --glow:#ff86c8; --glow-ink:#1c0b17; --go:#19c27a;
+    --px-a:#15141b; --px-b:#121117; --px-bg:#131219; --rival-1:#4b4660; --rival-2:#6a6288; --rival-3:#3a3650; --rival-4:#8a82a8;
     --font:"Albert Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
     --step-small:clamp(.8125rem,.79rem + .1vw,.875rem);
     --step-body:clamp(1.0625rem,1rem + .25vw,1.1875rem);
@@ -31,7 +39,7 @@
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth;scroll-padding-top:72px}
-  body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:var(--step-body);line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;font-variant-numeric:tabular-nums}
+  body{background-color:var(--bg);background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);background-size:44px 44px;color:var(--ink);font-family:var(--font);font-size:var(--step-body);line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;font-variant-numeric:tabular-nums}
   a{color:inherit}
   button,input{font:inherit;color:inherit}
   ::selection{background:var(--glow);color:var(--glow-ink)}
@@ -310,17 +318,28 @@
   canvas.alp{display:block;width:100%;image-rendering:pixelated;image-rendering:crisp-edges}
   .card canvas.alp{height:156px;margin:0 -28px;width:calc(100% + 56px)}
   .card .band{display:none}
-  footer{background:#0d1132;padding-top:0}
+  footer{background:#0e0d13;padding-top:0}
   footer canvas.alp{height:220px;margin-bottom:28px}
   .word{margin-top:-6px}
   @media (max-width:900px){.card canvas.alp{height:124px;margin:0 -20px;width:calc(100% + 40px)}footer canvas.alp{height:150px}}
+
+  /* the cube */
+  .nav .mark img{display:block;width:30px;height:30px;filter:drop-shadow(0 0 10px rgba(255,134,200,.35))}
+  .logo-stage{position:relative;height:210px;margin:0 -28px;display:grid;place-items:center;overflow:hidden;
+    background-image:radial-gradient(circle at 50% 44%,rgba(255,134,200,.42),rgba(255,134,200,0) 58%),linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+    background-size:100% 100%,22px 22px,22px 22px;background-color:#0e0d13}
+  .logo-stage img{width:132px;height:132px;filter:drop-shadow(0 0 28px rgba(255,134,200,.4));animation:bob 5s ease-in-out infinite}
+  @keyframes bob{50%{transform:translateY(-7px)}}
+  [data-ui] .frow .ms{color:var(--go)}
+  [data-ui] .fh .dot{background:var(--go)}
+  @media (max-width:900px){.logo-stage{height:170px;margin:0 -20px}.logo-stage img{width:108px;height:108px}}
 </style>
 <script>document.documentElement.className='js'</script>
 </head>
 <body>
 
 <header class="nav"><div class="wrap">
-  <a class="mark" href="#top" aria-label="a/place, back to the board"><i aria-hidden="true"><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b></i>a/place</a>
+  <a class="mark" href="#top" aria-label="a/place, back to the board"><img src="/logo.svg" alt="" width="30" height="30">a/place</a>
   <ul>
     <li><a href="#how">How it works</a></li>
     <li><a href="#payouts">Payouts</a></li>
@@ -362,7 +381,7 @@
 
     <aside class="side">
       <div class="card">
-        <canvas class="alp" data-seed="11" data-snow="1" aria-hidden="true"></canvas>
+        <div class="logo-stage" aria-hidden="true"><img src="/logo.svg" alt="" width="132" height="132"></div>
         <div class="band" id="band" aria-hidden="true"></div>
         <h1 id="h1">Claim the&nbsp;chain.</h1>
         <p class="lede">A live pixel field on Solana. Every click is one transaction, final in about 150&nbsp;ms. Keep your pixels alive and earn from the pool.</p>
@@ -490,7 +509,7 @@
 <dialog class="wallets" id="wallets" aria-labelledby="wallets-h"><h2 id="wallets-h">Choose a wallet</h2><ul></ul><form method="dialog"><button>Cancel</button></form></dialog>
 
 <footer id="buy">
-  <canvas class="alp" data-seed="4" data-near="#0d1132" aria-hidden="true"></canvas>
+  <canvas class="alp" data-seed="4" data-near="#0e0d13" aria-hidden="true"></canvas>
   <div class="wrap">
     <div class="word" id="word" role="img" aria-label="a/place"></div>
     <div class="fcols">
@@ -537,7 +556,7 @@
     L:['10000','10000','10000','10000','10000','10000','11111'],G:['01110','10001','10000','10111','10001','10001','01111'],
     O:['01110','10001','10001','10001','10001','10001','01110'],A:['01110','10001','10001','11111','10001','10001','10001'],
     C:['01111','10000','10000','10000','10000','10000','01111'],'/':['00001','00010','00010','00100','01000','01000','10000'],W:['10001','10001','10001','10101','10101','10101','01010']};
-  const word=$('word'), WORDCOL=['#ffe2b0','#ffc29a','#ff9a8a','#ee6f86','#ff9a8a','#ffc29a','#ffe2b0'];
+  const word=$('word'), WORDCOL=['#ff86c8','#13b26e','#7b52e0','#ff86c8','#13b26e','#7b52e0','#ff86c8'];
   function buildWord(){word.innerHTML='';const narrow=matchMedia('(max-width:900px)').matches;
     const lines=['A/PLACE'], cols=41, rows=7;
     const cells=[];for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const s=document.createElement('span');word.appendChild(s);cells.push(s);}
@@ -562,7 +581,7 @@
 // Pixel Alps at alpenglow: sky in stepped bands from night to sunset, three ridges, west-facing slopes and snow
 // lit rose and peach, a few twinkling stars. Deterministic per seed, redrawn on resize.
 (function(){
-  const SKY=['#0b0f26','#11163a','#1a1c4d','#262163','#38246f','#4f2a7c','#6b2f86','#8c368a','#b04489','#d45487','#ee6f86','#ff8f88','#ffb08f','#ffcf9e','#ffe6b8'];
+  const SKY=['#0c0b11','#121019','#181425','#1f1832','#2a1d42','#3a2257','#4f2a6f','#662f86','#7d3a9a','#9a45a8','#b84fb3','#d65bbb','#ef6cc2','#ff86c8','#ffb3dc'];
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const rnd=(seed)=>{let t=seed>>>0;return()=>{t+=0x6D2B79F5;let r=Math.imul(t^t>>>15,1|t);r^=r+Math.imul(r^r>>>7,61|r);return((r^r>>>14)>>>0)/4294967296;};};
   function ridge(w,base,amp,rough,R){ // smooth random skyline, one height per column
@@ -585,12 +604,12 @@
     cv._stars=stars;
     // far ridge: dusk violet, faintly lit
     const far=ridge(w,h*.72,h*.3,1.5,R);
-    for(let x=0;x<w;x++)for(let y=far[x];y<h;y++)set(x,y,(x>0&&far[x]<far[x-1]&&y-far[x]<3)?'#8a4f8f':'#3c2f6e');
+    for(let x=0;x<w;x++)for(let y=far[x];y<h;y++)set(x,y,(x>0&&far[x]<far[x-1]&&y-far[x]<3)?'#8a4fa8':'#2f2350');
     // main ridge: rock, snow above the snowline, west-facing faces in alpenglow
     const mid=ridge(w,h*.9,h*.55,2,R),snowline=h*.58;
     for(let x=0;x<w;x++){const lit=x>0&&mid[x]<=mid[x-1];
       for(let y=mid[x];y<h;y++){const snow=cv.dataset.snow&&y<snowline+(x%5)-2&&y-mid[x]<6;
-        set(x,y,snow?(lit?(y-mid[x]<2?'#ffe6d2':'#ffbfae'):'#8f93cc'):(lit&&y-mid[x]<4?'#b9577f':(lit?'#5a3a7c':'#2a2452')));}}
+        set(x,y,snow?(lit?(y-mid[x]<2?'#ffe1f1':'#ffb3dc'):'#9c8ae0'):(lit&&y-mid[x]<4?'#c24f9e':(lit?'#5a3a8c':'#241c44')));}}
     // near ridge: night silhouette that melts into the page
     const near=ridge(w,h*1.02,h*.28,1,R),nc=cv.dataset.near||getComputedStyle(cv.parentElement).backgroundColor||'#141a3a';
     for(let x=0;x<w;x++)for(let y=near[x];y<h;y++)set(x,y,y===near[x]&&x>0&&near[x]<near[x-1]?'#3d2a5e':nc);
