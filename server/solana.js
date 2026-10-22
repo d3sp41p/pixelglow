@@ -113,10 +113,11 @@ export async function isHolderFast(wallet) {
 // Every send goes to the main RPC and, in parallel, to any extra endpoints: whichever reaches the block leader first wins.
 const sendRpcs = [rpc, ...config.SEND_RPC_URLS.map((u) => createSolanaRpc(u))];
 // Counters for /api/stats, so slow clicks can be traced to the endpoint that refused them.
-export const diag = { send: sendRpcs.map((_, k) => ({ endpoint: k === 0 ? 'main' : 'extra' + k, ok: 0, limited: 0, failed: 0 })), poll429: 0, pollFailed: 0, wsFailed: 0 };
+export const diag = { send: sendRpcs.map((_, k) => ({ endpoint: k === 0 ? 'main' : 'extra' + k, ok: 0, limited: 0, failed: 0 })), poll429: 0, pollFailed: 0, wsFailed: 0, lastErrors: [] };
+const noteErr = (where, e) => { const m = `${where}: ${(e.context?.__code ?? '')} ${e.message}`.slice(0, 220); if (!diag.lastErrors.includes(m)) { diag.lastErrors.unshift(m); diag.lastErrors.length = Math.min(diag.lastErrors.length, 6); } };
 export async function sendWire(base64Wire) {
   const sends = sendRpcs.map((r, k) => r.sendTransaction(base64Wire, { encoding: 'base64', skipPreflight: true, maxRetries: 0n }).send()
-    .then((v) => { diag.send[k].ok++; return v; }, (e) => { if (/429/.test(e.message)) diag.send[k].limited++; else diag.send[k].failed++; throw e; }));
+    .then((v) => { diag.send[k].ok++; return v; }, (e) => { if (/429/.test(e.message)) diag.send[k].limited++; else diag.send[k].failed++; noteErr(diag.send[k].endpoint, e); throw e; }));
   return Promise.any(sends).catch((e) => { throw e.errors?.[0] || e; });
 }
 
