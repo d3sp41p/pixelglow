@@ -89,12 +89,12 @@ async function claim(wire) {
   const t0 = Date.now();
   const c = await relay.coSign(wire);
   const tr = { sign: Date.now() - t0, send: null, via: null, sends: 1, slotAtSend: slotNow.slot, slots: null, land: null, confirm: null };
-  // First send now; re-send only while it is not in a block yet (most claims land well before the first re-send,
-  // so this costs no extra RPC calls), and never let one rate-limited send fail the click.
+  // First send now; re-send from 0.5 s while it is not in a block yet (most claims land in ~0.3 s, so this costs
+  // few extra calls and rescues the ones a leader dropped), and never let one rate-limited send fail the click.
   let via = null; // the endpoint that took the first send; re-sends go elsewhere
   sendWire(c.wire).then((name) => { via = name; tr.via = name; tr.send = Date.now() - t0; tr.slotAtSend = slotNow.slot; }, (e) => console.warn('[claim] send failed, will retry:', e.message));
   let resend = null;
-  const startResend = setTimeout(() => { resend = setInterval(() => { tr.sends++; sendWire(c.wire, via).catch(() => {}); }, 900); }, 800);
+  const startResend = setTimeout(() => { resend = setInterval(() => { tr.sends++; sendWire(c.wire, via).catch(() => {}); }, 600); }, 500);
   const stopResend = () => { clearTimeout(startResend); if (resend) clearInterval(resend); };
   const confirmed = waitForConfirmation(c.signature, 30_000, 'confirmed');
   const landed = await Promise.race([waitForConfirmation(c.signature, 30_000, 'processed'), confirmed]);
