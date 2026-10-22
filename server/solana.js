@@ -117,11 +117,11 @@ const hostOf = (u) => { try { return new URL(u).hostname.split('.').slice(-2).jo
 const endpoints = [
   { url: config.RPC_URL, rpc, rps: config.SEND_RPS },
   ...config.SEND_RPC_URLS.map(({ url, rps }) => ({ url, rpc: createSolanaRpc(url), rps })),
-].map((e, k) => ({ ...e, name: `${k}:${hostOf(e.url)}`, tokens: 1, at: Date.now(), coolUntil: 0 }));
+].map((e, k) => ({ ...e, cur: e.rps, name: `${k}:${hostOf(e.url)}`, tokens: 1, at: Date.now(), coolUntil: 0 }));
 // Counters for /api/stats, so slow clicks can be traced to the endpoint that refused them.
-export const diag = { send: endpoints.map((e) => ({ endpoint: e.name, rps: e.rps, ok: 0, limited: 0, failed: 0 })), queuedMs: 0, poll429: 0, pollFailed: 0, wsFailed: 0, lastErrors: [] };
+export const diag = { send: endpoints.map((e) => ({ endpoint: e.name, rps: e.rps, now: e.rps, ok: 0, limited: 0, failed: 0 })), queuedMs: 0, poll429: 0, pollFailed: 0, wsFailed: 0, lastErrors: [] };
 const noteErr = (where, e) => { const m = `${where}: ${(e.context?.__code ?? '')} ${e.message}`.slice(0, 220); if (!diag.lastErrors.includes(m)) { diag.lastErrors.unshift(m); diag.lastErrors.length = Math.min(diag.lastErrors.length, 6); } };
-const refill = (e, now) => { e.tokens = Math.min(Math.max(1, e.rps), e.tokens + ((now - e.at) / 1000) * e.rps); e.at = now; };
+const refill = (e, now) => { e.tokens = Math.min(Math.max(1, e.cur), e.tokens + ((now - e.at) / 1000) * e.cur); e.at = now; };
 let rr = 0;
 function takeSlot(avoid) {
   const now = Date.now();
@@ -133,7 +133,8 @@ function takeSlot(avoid) {
   }
   return -1;
 }
-const isRateLimit = (e) => /429|rate.?limit|too many/i.test(e.message || '');
+// Minified builds of the SDK hide the text, so look at the HTTP status too.
+const isRateLimit = (e) => e?.context?.statusCode === 429 || /429|rate.?limit|too many/i.test(e?.message || '');
 // Returns the endpoint name that accepted the transaction.
 export async function sendWire(base64Wire, avoid = null) {
   const t0 = Date.now();
@@ -149,12 +150,13 @@ export async function sendWire(base64Wire, avoid = null) {
     try {
       await e.rpc.sendTransaction(base64Wire, { encoding: 'base64', skipPreflight: true, maxRetries: 0n }).send();
       d.ok++;
+      e.cur = Math.min(e.rps, e.cur + 0.05 * e.rps); d.now = +e.cur.toFixed(2); // creep back up to the configured rate
       return e.name;
     } catch (err) {
+      // Any refusal: rest this endpoint for a second and hand the transaction to the next one.
       lastErr = err; noteErr(e.name, err);
-      if (isRateLimit(err)) { d.limited++; e.coolUntil = Date.now() + 1000; e.tokens = 0; avoid = e.name; continue; }
-      d.failed++;
-      throw err;
+      if (isRateLimit(err)) { d.limited++; e.cur = Math.max(0.25, e.cur / 2); d.now = +e.cur.toFixed(2); } else d.failed++;
+      e.coolUntil = Date.now() + 1000; e.tokens = 0; avoid = e.name;
     }
   }
   throw lastErr;

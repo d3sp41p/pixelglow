@@ -48,4 +48,4 @@ Render → сервис `pixelglow` → **Environment** → **Edit** → уда�
 1. **Alchemy** — alchemy.com → Create new app → Solana, Mainnet → скопировать HTTPS-адрес `https://solana-mainnet.g.alchemy.com/v2/…`
 2. **Chainstack** — chainstack.com (тариф Developer, без карты) → Create project → Join network → Solana Mainnet → Global node → Access & credentials → HTTPS endpoint `https://solana-mainnet.core.chainstack.com/…`
 
-Вставить в Render переменную `SEND_RPC_URLS` (шаблон в `mainnet.env`). В `/api/stats` → `diag.send` видно, сколько отправок принял и отклонил каждый RPC; если у кого-то растёт `limited`, уменьши его число после `|`.
+Вставить в Render переменную `SEND_RPC_URLS` (шаблон в `mainnet.env`) — ссылки целиком. Число после `|` — верхний предел; если RPC отказывает, сервер сам снижает ему темп и плавно возвращает. В `/api/stats` → `diag.send` видно, сколько отправок принял и отклонил каждый RPC (`now` — текущий темп).
