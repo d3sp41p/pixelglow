@@ -197,7 +197,16 @@ async function chooseWallet() {
 
 async function connect() {
   const w = await chooseWallet();
-  if (!w) { setStatus('No Solana wallet found. Install Phantom, Solflare or Backpack, then reload.', 'err'); return false; }
+  if (!w) {
+    // Phones: the in-app browsers of Phantom and Solflare inject the wallet, ordinary Safari/Chrome do not.
+    const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const here = encodeURIComponent(location.href);
+    statusEl.className = 'status err';
+    statusEl.innerHTML = mobile
+      ? `No wallet in this browser. <a href="https://phantom.app/ul/browse/${here}?ref=${here}">Open in Phantom</a> or <a href="https://solflare.com/ul/v1/browse/${here}?ref=${here}">Solflare</a>.`
+      : 'No Solana wallet found. Install <a href="https://phantom.com/download" target="_blank" rel="noopener">Phantom</a>, Solflare or Backpack, then reload.';
+    return false;
+  }
   const { accounts } = await w.features['standard:connect'].connect();
   const acc = accounts[0];
   if (!acc) return false;
@@ -249,8 +258,8 @@ async function guarded(fn) {
 $('connect').addEventListener('click', (e) => { e.preventDefault(); guarded(me.wallet ? startSession : connect); });
 $('cta').addEventListener('click', (e) => {
   const st = $('cta').dataset.state;
-  if (st === 'buy') return; // follows its href to the buy section
-  e.preventDefault();
+  if (st === 'loading') return;
+  if (st === 'buy') { $('buy').scrollIntoView({ behavior: 'smooth' }); return; }
   if (st === 'connect') guarded(async () => { if (await connect() && me.holder !== false) await startSession(); });
   else if (st === 'session') guarded(startSession);
 });

@@ -288,6 +288,8 @@
   /* live app bits */
   .card .status{min-height:1.5em;margin-top:12px;font-size:var(--step-small);color:var(--muted);max-width:40ch}
   .card .status.err{color:var(--glow)}
+  .card .status a{color:var(--ink);text-decoration-color:var(--glow);text-decoration-thickness:2px;text-underline-offset:3px}
+  .btn[data-state="loading"]{opacity:.6;cursor:progress}
   .btn.nudge{animation:nudge .45s var(--ease)}
   @keyframes nudge{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
   [data-ui] a.sig{text-decoration:none}
@@ -313,7 +315,7 @@
     <li><a href="#speed">Why 150 ms</a></li>
     <li><a href="#faq">FAQ</a></li>
   </ul>
-  <button class="btn" id="connect" type="button"><span class="px"></span>Connect wallet</button>
+  <button class="btn" id="connect" type="button"><span class="px"></span>Loading…</button>
 </div></header>
 
 <main id="top">
@@ -351,7 +353,7 @@
         <div class="band" id="band" aria-hidden="true"></div>
         <h1 id="h1">Claim the&nbsp;chain.</h1>
         <p class="lede">A live pixel field on Solana. Every click is one transaction, final in about 150&nbsp;ms. Keep your pixels alive and earn from the pool.</p>
-        <div class="act"><a class="btn" id="cta" href="#buy"><span class="px"></span>Connect wallet to play</a></div>
+        <div class="act"><button class="btn" id="cta" type="button" data-state="loading"><span class="px"></span>Loading…</button></div>
         <p class="status" id="status" aria-live="polite"></p>
       </div>
       <div class="feed" data-ui>
