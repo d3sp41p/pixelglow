@@ -33,13 +33,23 @@ export class Board {
   touch(i, t) { this.acc[i] += this.counts[i] * (t - this.last[i]); this.last[i] = t; }
 
   apply(x, y, c, wallet, t = Date.now() / 1000) {
-    const cell = y * config.COLS + x, w = this.idx(wallet), prev = this.owners[cell];
+    const cell = y * config.COLS + x, w = this.idx(wallet), prev = this.owners[cell], prevColor = this.colors[cell];
     this.claims[w]++; this.color[w] = c;
-    if (prev === w + 1) { this.colors[cell] = c; return { cell, prevOwner: wallet }; }
+    if (prev === w + 1) { this.colors[cell] = c; return { cell, prevOwner: wallet, prevColor }; }
     if (prev) { const p = prev - 1; this.touch(p, t); this.counts[p]--; } else this.live++;
     this.touch(w, t); this.counts[w]++;
     this.owners[cell] = w + 1; this.colors[cell] = c;
-    return { cell, prevOwner: prev ? this.wallets[prev - 1] : null };
+    return { cell, prevOwner: prev ? this.wallets[prev - 1] : null, prevColor };
+  }
+
+  // Undo a claim whose transaction did not confirm, unless the pixel has moved on since.
+  restore(cell, byWallet, prev, t = Date.now() / 1000) {
+    const w = this.index.get(byWallet);
+    if (w === undefined || this.owners[cell] !== w + 1) return false;
+    this.touch(w, t); this.counts[w]--; this.live--;
+    this.owners[cell] = 0; this.colors[cell] = 0;
+    if (prev.owner) { const p = this.idx(prev.owner); this.touch(p, t); this.counts[p]++; this.live++; this.owners[cell] = p + 1; this.colors[cell] = prev.color; }
+    return true;
   }
 
   // Time-weighted average live pixels so far this epoch, for one wallet and for everyone.

@@ -364,7 +364,7 @@
   </section>
 
   <section class="sec wrap" id="numbers" aria-labelledby="now-h">
-    <div class="shead" data-rise><h2 id="now-h">The board, right now</h2><p>Every pixel is a Solana transaction you can open in the explorer. Every fee from $GLOW trading goes into the holders' reward pool, and every 10 minutes a share of it is paid to whoever is holding ground.</p></div>
+    <div class="shead" data-rise><h2 id="now-h">The board, right now</h2><p>Every pixel is a Solana transaction you can open in the explorer. Every fee from $GLOW trading goes into the holders' reward pool, which pays 20% of itself a day, every 10 minutes, to whoever is holding ground.</p></div>
     <ul class="nums" data-rise style="--d:1">
       <li><div class="v" id="s-pool">0.000<small>SOL</small></div><div class="k">Holders' reward pool</div></li>
       <li><div class="v" id="s-next">0.000<small>SOL</small></div><div class="k">Paid out next epoch</div></li>
@@ -424,16 +424,16 @@
   </section>
 
   <section class="sec wrap" id="payouts" aria-labelledby="pay-h">
-    <div class="shead" data-rise><h2 id="pay-h">How the pool pays</h2><p>All fees belong to holders. The pool pays out a steady share every epoch, so rewards keep flowing between busy and quiet days.</p></div>
+    <div class="shead" data-rise><h2 id="pay-h">How the pool pays</h2><p>All fees belong to holders. The pool pays out a steady share each day, so rewards keep flowing even when trading goes quiet.</p></div>
     <div class="paygrid">
       <div class="rules" data-rise style="--d:1">
         <div class="figs">
           <div><b>100%</b><span>of trading fees go to the holders' pool</span></div>
-          <div><b>20%</b><span>of the pool paid out every 10 min</span></div>
+          <div><b>20%</b><span>of the pool paid out per day, a slice every 10 min</span></div>
           <div><b>0 SOL</b><span>price per pixel</span></div>
         </div>
-        <p>Each epoch 20% of the pool is split between holders by their average number of live pixels over those 10 minutes. The other 80% stays in the pool for the next epochs, so new fees and old ones keep paying out evenly. A pixel painted over stops counting the moment it is taken.</p>
-        <code>your payout = pool × 20% × your avg. live pixels ÷ all avg. live pixels</code>
+        <p>Every 10 minutes a small slice of the pool, adding up to 20% a day, is split between holders by their average number of live pixels over those 10 minutes. The rest stays in the pool as a cushion: if trading slows down, payouts carry on from what has built up. A pixel painted over stops counting the moment it is taken.</p>
+        <code>each 10 min: pool × 0.155% × your avg. live pixels ÷ all avg. live pixels  (= 20% of the pool a day)</code>
       </div>
       <div class="hist" data-ui data-rise style="--d:2">
         <div class="ph">Last payouts<span class="r" id="hist-next">next in 10:00</span></div>
@@ -457,7 +457,7 @@
     <div class="acc" data-rise style="--d:1">
       <details open><summary>Do I pay for each pixel?</summary><p>No. There is no price per pixel, and the network fee is paid by the project. Holding at least 10,000 $GLOW is the only requirement to draw.</p></details>
       <details><summary>Will my wallet pop up on every click?</summary><p>No. You connect once and approve a session key that can only claim pixels and expires on its own. After that every click signs itself.</p></details>
-      <details><summary>How is my payout worked out?</summary><p>All trading fees go into the holders' pool. Every 10 minutes 20% of the pool is split between holders by their average live pixels over that epoch; the rest keeps paying out in the next epochs.</p></details>
+      <details><summary>How is my payout worked out?</summary><p>All trading fees go into the holders' pool. The pool pays out 20% of what it holds per day, in small slices every 10 minutes, split by average live pixels. The rest is a cushion that keeps payouts going when trading slows.</p></details>
       <details><summary>What if someone paints over me?</summary><p>That pixel stops counting for you the moment it's taken, and your share drops in real time. Take it back, or grow somewhere else.</p></details>
       <details><summary>Can I check a wallet without connecting?</summary><p>Yes. Paste any address below to see its live pixels, share and estimated payout. Connecting is only needed to draw.</p></details>
       <details><summary>Is this live on-chain?</summary><p id="faq-live">It runs on Solana devnet with a test $GLOW while the token launches. Every pixel and every payout is a real transaction you can open in the explorer.</p></details>

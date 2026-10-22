@@ -51,11 +51,17 @@ export async function loadOrCreateKey(name) {
 export const addressOf = (publicKey) => getAddressFromPublicKey(publicKey);
 
 // ---- blockhash: refreshed in the background so every click can be built instantly ----
-export const chain = { blockhash: null, lastValidBlockHeight: 0 };
+export const chain = { blockhash: null, lastValidBlockHeight: 0, cuPrice: config.MIN_PRIORITY_MICROLAMPORTS };
 export async function refreshBlockhash() {
   const { value } = await rpc.getLatestBlockhash({ commitment: 'confirmed' }).send();
   chain.blockhash = value.blockhash;
   chain.lastValidBlockHeight = Number(value.lastValidBlockHeight);
+  // Priority price: 75th percentile of what recent blocks charged, kept within our bounds.
+  try {
+    const fees = (await rpc.getRecentPrioritizationFees().send()).map((f) => Number(f.prioritizationFee)).sort((x, y) => x - y);
+    const p75 = fees.length ? fees[Math.floor(fees.length * 0.75)] : 0;
+    chain.cuPrice = Math.min(config.MAX_PRIORITY_MICROLAMPORTS, Math.max(config.MIN_PRIORITY_MICROLAMPORTS, p75));
+  } catch {}
   return chain;
 }
 
@@ -90,25 +96,43 @@ export async function glowBalance(wallet, maxAgeMs = 30_000) {
   return amount;
 }
 export const isHolder = async (wallet, maxAgeMs) => config.MIN_HOLD <= 0 || (await glowBalance(wallet, maxAgeMs)) >= config.MIN_HOLD;
-
-// ---- sending and confirming ----
-export async function sendWire(base64Wire) {
-  return rpc.sendTransaction(base64Wire, { encoding: 'base64', skipPreflight: true, maxRetries: 3n }).send();
+// For clicks: a balance seen in the last 10 minutes answers at once, and a fresh one is fetched in the background.
+const refreshing = new Set();
+export async function isHolderFast(wallet) {
+  if (config.MIN_HOLD <= 0) return true;
+  const hit = holdCache.get(wallet);
+  if (!hit || Date.now() - hit.t > 10 * 60_000) return isHolder(wallet);
+  if (Date.now() - hit.t > 30_000 && !refreshing.has(wallet)) {
+    refreshing.add(wallet);
+    glowBalance(wallet, 0).catch(() => {}).finally(() => refreshing.delete(wallet));
+  }
+  return hit.amount >= config.MIN_HOLD;
 }
 
-// Confirmation: a WebSocket signature subscription per transaction (fast, cheap on rate limits),
-// with one batched status poll as a safety net that backs off when the RPC says 429.
+// ---- sending and confirming ----
+// Every send goes to the main RPC and, in parallel, to any extra endpoints: whichever reaches the block leader first wins.
+const sendRpcs = [rpc, ...config.SEND_RPC_URLS.map((u) => createSolanaRpc(u))];
+export async function sendWire(base64Wire) {
+  const sends = sendRpcs.map((r) => r.sendTransaction(base64Wire, { encoding: 'base64', skipPreflight: true, maxRetries: 0n }).send());
+  return Promise.any(sends).catch((e) => { throw e.errors?.[0] || e; });
+}
+
+// Waiting for a transaction: a WebSocket signature subscription (fast, cheap on rate limits), with one batched
+// status poll as a safety net that backs off when the RPC says 429. 'processed' = it is in a block,
+// 'confirmed' = a supermajority voted for that block.
 export const rpcSubscriptions = createSolanaRpcSubscriptions(config.RPC_WS_URL);
-const pending = new Map(); // signature -> { resolve, t0, timeoutMs }
-export function waitForConfirmation(signature, timeoutMs = 60_000) {
+const RANK = { processed: 1, confirmed: 2, finalized: 3 };
+const pending = new Map(); // key "sig|commitment" -> { sig, rank, resolve, t0, timeoutMs }
+export function waitForConfirmation(signature, timeoutMs = 60_000, commitment = 'confirmed') {
+  const key = signature + '|' + commitment;
   return new Promise((resolve) => {
     const abort = new AbortController();
     const keepAlive = setTimeout(() => {}, timeoutMs + 5000); // holds the process open while we wait
-    const done = (r) => { if (!pending.has(signature)) return; pending.delete(signature); clearTimeout(keepAlive); abort.abort(); resolve(r); };
-    pending.set(signature, { resolve: done, t0: Date.now(), timeoutMs });
+    const done = (r) => { if (!pending.has(key)) return; pending.delete(key); clearTimeout(keepAlive); abort.abort(); resolve(r); };
+    pending.set(key, { sig: signature, rank: RANK[commitment], resolve: done, t0: Date.now(), timeoutMs });
     (async () => {
       try {
-        const notes = await rpcSubscriptions.signatureNotifications(signature, { commitment: 'confirmed' }).subscribe({ abortSignal: abort.signal });
+        const notes = await rpcSubscriptions.signatureNotifications(signature, { commitment }).subscribe({ abortSignal: abort.signal });
         for await (const n of notes) { done(n.value.err ? { ok: false, err: n.value.err } : { ok: true, slot: Number(n.context.slot) }); break; }
       } catch (e) { if (!abort.signal.aborted) console.warn('[confirm] subscription failed, polling instead:', e.message); }
     })();
@@ -118,16 +142,18 @@ export function waitForConfirmation(signature, timeoutMs = 60_000) {
 const POLL_MS = 400;
 let pollDelay = POLL_MS;
 async function pollStatuses() {
-  const sigs = [...pending.keys()].filter((s) => Date.now() - pending.get(s).t0 > 300).slice(0, 256);
+  const waiting = [...pending.values()].filter((p) => Date.now() - p.t0 > 300);
+  const sigs = [...new Set(waiting.map((p) => p.sig))].slice(0, 256);
   if (sigs.length) {
     try {
       const { value } = await rpc.getSignatureStatuses(sigs).send();
-      value.forEach((st, k) => {
-        const p = pending.get(sigs[k]);
-        if (!p) return;
-        if (st && st.err) p.resolve({ ok: false, err: st.err });
-        else if (st && (st.confirmationStatus === 'confirmed' || st.confirmationStatus === 'finalized')) p.resolve({ ok: true, slot: Number(st.slot) });
-      });
+      const bySig = new Map(sigs.map((s, k) => [s, value[k]]));
+      for (const p of waiting) {
+        const st = bySig.get(p.sig);
+        if (!st) continue;
+        if (st.err) p.resolve({ ok: false, err: st.err });
+        else if ((RANK[st.confirmationStatus] || 0) >= p.rank) p.resolve({ ok: true, slot: Number(st.slot) });
+      }
       pollDelay = POLL_MS;
     } catch (e) { pollDelay = Math.min(8000, pollDelay * 2); if (!/429/.test(e.message)) console.warn('[confirm] status poll failed:', e.message); }
   }

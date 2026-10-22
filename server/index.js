@@ -49,7 +49,7 @@ function globalStats() {
   stats.recent = stats.recent.filter((t) => now - t < 5000);
   return {
     t: 'stats', live: board.live, players: board.top(1e9).length, txTotal: stats.txTotal, tps: +(stats.recent.length / 5).toFixed(1),
-    epoch: payouts.epoch, epochEnd: payouts.epochEnd, totalPaid: payouts.totalPaid, pool: lastPool, next: nextPayout, drip: config.DRIP_RATE,
+    epoch: payouts.epoch, epochEnd: payouts.epochEnd, totalPaid: payouts.totalPaid, pool: lastPool, next: nextPayout, dripPerDay: config.DRIP_PER_DAY,
     top: board.top(5),
   };
 }
@@ -61,7 +61,7 @@ setInterval(() => broadcast(globalStats()), 1000);
 
 // ---- blockhash for clients ----
 async function blockhashLoop() {
-  try { await refreshBlockhash(); broadcast({ t: 'bh', blockhash: chain.blockhash, lastValidBlockHeight: chain.lastValidBlockHeight }); }
+  try { await refreshBlockhash(); broadcast({ t: 'bh', blockhash: chain.blockhash, lastValidBlockHeight: chain.lastValidBlockHeight, cuPrice: chain.cuPrice }); }
   catch (e) { console.warn('[bh]', e.message); }
   setTimeout(blockhashLoop, 15_000);
 }
@@ -79,19 +79,39 @@ setInterval(() => {
 }, 1000);
 
 // ---- claims ----
+// The pixel is shown as soon as its transaction is in a block ('processed'); confirmation follows in the background
+// and the pixel is put back if it never comes.
+const lat = { land: [], confirm: [] }; // recent timings in ms
+const noteLat = (k, ms) => { lat[k].push(ms); if (lat[k].length > 200) lat[k].shift(); };
+const median = (xs) => { if (!xs.length) return null; const s = [...xs].sort((p, q) => p - q); return s[s.length >> 1]; };
 async function claim(wire) {
   const t0 = Date.now();
   const c = await relay.coSign(wire);
-  try { await sendWire(c.wire); }
-  catch (e) { console.warn('[claim] send failed:', e.message); throw new ClaimError('rpc_busy', 'The network is busy. Try again in a moment.'); }
-  const res = await waitForConfirmation(c.signature, 45_000);
-  if (!res.ok) throw new ClaimError('failed', 'The transaction did not land. Try again.');
+  // First send now; re-send only while it is not in a block yet (most claims land well before the first re-send,
+  // so this costs no extra RPC calls), and never let one rate-limited send fail the click.
+  sendWire(c.wire).catch((e) => console.warn('[claim] send failed, will retry:', e.message));
+  let resend = null;
+  const startResend = setTimeout(() => { resend = setInterval(() => sendWire(c.wire).catch(() => {}), 900); }, 800);
+  const stopResend = () => { clearTimeout(startResend); if (resend) clearInterval(resend); };
+  const confirmed = waitForConfirmation(c.signature, 30_000, 'confirmed');
+  const landed = await Promise.race([waitForConfirmation(c.signature, 30_000, 'processed'), confirmed]);
+  stopResend();
+  if (!landed.ok) throw new ClaimError('failed', 'The transaction did not land. Try again.');
   const ms = Date.now() - t0;
-  board.apply(c.x, c.y, c.c, c.wallet);
+  noteLat('land', ms);
+  const prev = board.apply(c.x, c.y, c.c, c.wallet);
   stats.txTotal++; stats.recent.push(Date.now());
   const px = { i: c.y * config.COLS + c.x, c: c.c, w: c.wallet, sig: c.signature, ms };
   pxQueue.push(px); lastClaims.unshift(px); lastClaims.length = Math.min(lastClaims.length, 14);
-  appendFileSync(CLAIMS_LOG, JSON.stringify({ t: Date.now(), sig: c.signature, slot: res.slot, w: c.wallet, x: c.x, y: c.y, c: c.c }) + '\n');
+  confirmed.then((res) => {
+    if (res.ok) {
+      noteLat('confirm', Date.now() - t0);
+      appendFileSync(CLAIMS_LOG, JSON.stringify({ t: Date.now(), sig: c.signature, slot: res.slot, w: c.wallet, x: c.x, y: c.y, c: c.c }) + '\n');
+    } else if (board.restore(prev.cell, c.wallet, { owner: prev.prevOwner, color: prev.prevColor })) {
+      console.warn('[claim] did not confirm, pixel restored:', c.signature, JSON.stringify(res.err));
+      pxQueue.push({ i: prev.cell, c: board.colors[prev.cell], w: prev.prevOwner || '', revert: true });
+    }
+  });
   return { signature: c.signature, ms, x: c.x, y: c.y, c: c.c };
 }
 
@@ -135,8 +155,8 @@ const server = createServer(async (req, res) => {
     if (p === '/api/config') return json(res, 200, {
       cluster: config.CLUSTER, relayer: relayer.address, pool: pool.address, mint: config.GLOW_MINT, symbol: config.TOKEN_SYMBOL,
       cols: config.COLS, rows: config.ROWS, palette: config.PALETTE, epochSec: config.EPOCH_SEC,
-      holderShare: config.HOLDER_SHARE, dripRate: config.DRIP_RATE, minHold: config.MIN_HOLD, sessionTtl: config.SESSION_TTL_SEC,
-      blockhash: chain.blockhash, lastValidBlockHeight: chain.lastValidBlockHeight,
+      holderShare: config.HOLDER_SHARE, dripPerDay: config.DRIP_PER_DAY, dripPerEpoch: config.DRIP_RATE, minHold: config.MIN_HOLD, sessionTtl: config.SESSION_TTL_SEC,
+      blockhash: chain.blockhash, lastValidBlockHeight: chain.lastValidBlockHeight, cuPrice: chain.cuPrice,
     });
     if (p === '/api/board') {
       const w = url.searchParams.get('wallet');
@@ -147,7 +167,7 @@ const server = createServer(async (req, res) => {
         ...globalStats(),
       });
     }
-    if (p === '/api/stats') return json(res, 200, { ...globalStats(), history: payouts.history.slice(0, 10).map(({ payouts: _, ...h }) => h) });
+    if (p === '/api/stats') return json(res, 200, { ...globalStats(), latency: { landMs: median(lat.land), confirmMs: median(lat.confirm), samples: lat.land.length }, history: payouts.history.slice(0, 10).map(({ payouts: _, ...h }) => h) });
     if (p.startsWith('/api/wallet/')) {
       const w = decodeURIComponent(p.slice('/api/wallet/'.length));
       if (!isAddress(w)) return json(res, 400, { error: 'bad_address', message: 'That is not a Solana address.' });
@@ -172,7 +192,7 @@ const server = createServer(async (req, res) => {
 const wss = new WebSocketServer({ server, path: '/live' });
 wss.on('connection', (ws) => {
   clients.add(ws);
-  ws.send(JSON.stringify({ t: 'bh', blockhash: chain.blockhash, lastValidBlockHeight: chain.lastValidBlockHeight }));
+  ws.send(JSON.stringify({ t: 'bh', blockhash: chain.blockhash, lastValidBlockHeight: chain.lastValidBlockHeight, cuPrice: chain.cuPrice }));
   ws.send(JSON.stringify(globalStats()));
   ws.on('close', () => clients.delete(ws));
 });

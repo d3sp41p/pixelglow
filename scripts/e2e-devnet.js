@@ -27,8 +27,8 @@ async function player(name, glow) {
 }
 
 async function claim(p, x, y, c) {
-  const { blockhash, lastValidBlockHeight } = await api('/api/config');
-  let tx = buildClaimTransaction({ relayer: cfg.relayer, session: p.sessionAddr, blockhash, lastValidBlockHeight, x, y, c });
+  const { blockhash, lastValidBlockHeight, cuPrice } = await api('/api/config');
+  let tx = buildClaimTransaction({ relayer: cfg.relayer, session: p.sessionAddr, blockhash, lastValidBlockHeight, cuPrice, x, y, c });
   tx = await partiallySignTransaction([p.session], tx);
   return api('/api/claim', { tx: getBase64EncodedWireTransaction(tx) });
 }

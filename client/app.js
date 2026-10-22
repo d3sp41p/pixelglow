@@ -27,7 +27,7 @@ const RIVALS = [css('--rival-1'), css('--rival-2'), css('--rival-3'), css('--riv
 const explorer = (sig) => `https://explorer.solana.com/tx/${sig}${cfg.cluster === 'mainnet-beta' ? '' : `?cluster=${cfg.cluster}`}`;
 
 const me = { wallet: null, account: null, provider: null, session: null, keyPair: null, expires: 0, holder: null, glow: null, tx: 0 };
-const chain = { blockhash: cfg.blockhash, lastValidBlockHeight: cfg.lastValidBlockHeight };
+const chain = { blockhash: cfg.blockhash, lastValidBlockHeight: cfg.lastValidBlockHeight, cuPrice: cfg.cuPrice || 0 };
 let sel = 1, stats = null;
 
 // ---------------- board ----------------
@@ -155,11 +155,12 @@ function connectLive() {
   const ws = new WebSocket(LIVE_URL);
   ws.onmessage = (ev) => {
     const m = JSON.parse(ev.data);
-    if (m.t === 'bh') { chain.blockhash = m.blockhash; chain.lastValidBlockHeight = m.lastValidBlockHeight; }
+    if (m.t === 'bh') { chain.blockhash = m.blockhash; chain.lastValidBlockHeight = m.lastValidBlockHeight; if (m.cuPrice) chain.cuPrice = m.cuPrice; }
     else if (m.t === 'stats') onStats(m);
     else if (m.t === 'px') {
       for (const p of m.list) {
         pending.delete(p.i); colors[p.i] = p.c; mine[p.i] = p.w === me.wallet ? 1 : 0; paint(p.i);
+        if (p.revert) continue; // a claim that never confirmed: just put the pixel back
         if (p.w === me.wallet) toastAt(p.i, `✓ ${p.ms} ms`);
         feedClaim(p); ping(p.i); noteMs(p.ms);
       }
@@ -283,7 +284,7 @@ cv.addEventListener('click', async (ev) => {
   if (!pending.has(i)) pending.set(i, colors[i]);
   colors[i] = sel; paint(i); // optimistic; the confirmed state arrives over the live channel
   try {
-    let tx = buildClaimTransaction({ relayer: cfg.relayer, session: me.session, blockhash: chain.blockhash, lastValidBlockHeight: chain.lastValidBlockHeight, x, y, c: sel });
+    let tx = buildClaimTransaction({ relayer: cfg.relayer, session: me.session, blockhash: chain.blockhash, lastValidBlockHeight: chain.lastValidBlockHeight, x, y, c: sel, cuPrice: chain.cuPrice });
     tx = await partiallySignTransaction([me.keyPair], tx);
     const r = await api('/api/claim', { tx: getBase64EncodedWireTransaction(tx) });
     me.tx++; renderMine();

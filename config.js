@@ -14,6 +14,8 @@ export const config = {
   CLUSTER: env('CLUSTER', 'devnet'),
   RPC_URL: env('RPC_URL', 'https://api.devnet.solana.com'),
   RPC_WS_URL: env('RPC_WS_URL', 'wss://api.devnet.solana.com'),
+  // Extra endpoints every claim is also sent to, in parallel (comma-separated). Default: the public endpoint of the cluster.
+  SEND_RPC_URLS: env('SEND_RPC_URLS', env('CLUSTER', 'devnet') === 'mainnet-beta' ? 'https://api.mainnet-beta.solana.com' : '').split(',').map((s) => s.trim()).filter(Boolean),
   PORT: num('PORT', 8787),
   // Sites allowed to call the API from a browser, comma-separated (e.g. https://pixelglow.vercel.app). '*' = any.
   ALLOWED_ORIGINS: env('ALLOWED_ORIGINS', '*').split(',').map((s) => s.trim()).filter(Boolean),
@@ -33,7 +35,9 @@ export const config = {
   // ---- economy (§2) ----
   EPOCH_SEC: num('EPOCH_SEC', 600),              // 10 minutes (§2.3)
   HOLDER_SHARE: num('HOLDER_SHARE', 1.0),        // share of every fee that goes into the holders' reward pool (1 = all of it)
-  DRIP_RATE: num('DRIP_RATE', 0.20),             // share of the reward pool paid out each epoch; the rest waits for later epochs
+  // Share of the reward pool paid out per day, spread evenly over every epoch. What is not paid yet stays in the
+  // pool as a cushion, so payouts carry on when trading slows. 0.20 = 20% of the pool a day.
+  DRIP_PER_DAY: num('DRIP_PER_DAY', 0.20),
   DUST_LAMPORTS: num('DUST_LAMPORTS', 500_000),  // 0.0005 SOL: smaller payouts accrue to the next epoch (§2.6)
   POOL_RESERVE_LAMPORTS: num('POOL_RESERVE_LAMPORTS', 1_000_000), // kept in the pool wallet so it stays rent-exempt; payout gas is paid by the relayer
   TREASURY_ADDRESS: env('TREASURY_ADDRESS', ''), // where the (1 - HOLDER_SHARE) cut of new fees goes; empty = it stays in the pool
@@ -41,6 +45,10 @@ export const config = {
   // ---- sessions & relayer (§1.3, fee payer = project) ----
   SESSION_TTL_SEC: num('SESSION_TTL_SEC', 24 * 3600),
   MAX_CLAIMS_PER_SEC: num('MAX_CLAIMS_PER_SEC', 20),          // per wallet, generous: speed is the point (§2.6)
+  // Priority fee per compute unit for claims, picked from recent network fees and kept inside these bounds.
+  // 22,000 units × 50,000 µ-lamports = 1,100 lamports (+11% on the 10,000 base fee); the cap is the most the relayer will pay.
+  MIN_PRIORITY_MICROLAMPORTS: num('MIN_PRIORITY_MICROLAMPORTS', 10_000),
+  MAX_PRIORITY_MICROLAMPORTS: num('MAX_PRIORITY_MICROLAMPORTS', 200_000),
   RELAYER_DAILY_TX_CAP: num('RELAYER_DAILY_TX_CAP', 200_000), // ≈ 2 SOL/day: a claim has 2 signatures = 10,000 lamports
 
   // ---- files ----
@@ -55,3 +63,6 @@ if (!config.GLOW_MINT && config.CLUSTER === 'devnet') {
   try { config.GLOW_MINT = JSON.parse(readFileSync(join(config.KEYS_DIR, 'devnet.json'), 'utf8')).mint || ''; } catch {}
 }
 if (!config.TOKEN_SYMBOL) config.TOKEN_SYMBOL = config.NATIVE_GATE() ? 'SOL' : '$GLOW';
+// Per-epoch share that compounds to DRIP_PER_DAY over a day: 1 - (1 - daily)^(epoch / day). 20%/day at 10 min ≈ 0.155%.
+config.DRIP_RATE = 1 - Math.pow(1 - config.DRIP_PER_DAY, config.EPOCH_SEC / 86_400);
+if (process.env.DRIP_RATE) console.warn('[config] DRIP_RATE is no longer used and is ignored; set DRIP_PER_DAY instead.');

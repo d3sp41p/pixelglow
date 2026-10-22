@@ -7,8 +7,8 @@ import {
   getTransactionDecoder, getUtf8Decoder, getUtf8Encoder, partiallySignTransaction, verifySignature,
 } from '@solana/kit';
 import { config } from '../config.js';
-import { MEMO_PROGRAM, parseMemo, sessionMessage } from '../shared/claim.js';
-import { isHolder } from './solana.js';
+import { CLAIM_CU_LIMIT, COMPUTE_BUDGET_PROGRAM, MEMO_PROGRAM, parseMemo, sessionMessage } from '../shared/claim.js';
+import { isHolder, isHolderFast } from './solana.js';
 
 export class ClaimError extends Error { constructor(code, msg) { super(msg); this.code = code; } }
 
@@ -64,15 +64,30 @@ export class Relay {
       msg = getCompiledTransactionMessageDecoder().decode(tx.messageBytes);
     } catch { throw new ClaimError('malformed', 'Could not decode the transaction.'); }
 
-    // Exactly: [relayer (fee payer), session (readonly signer), memo program], one memo instruction.
+    // Exactly: [relayer (fee payer), session (readonly signer), then only the memo and compute budget programs].
+    // One memo instruction signed by the session; at most one unit limit and one unit price, both capped,
+    // because the relayer pays for them.
     const a = msg.staticAccounts, h = msg.header, ix = msg.instructions;
-    const shapeOk = msg.version === 'legacy' && a.length === 3 && a[0] === this.relayer.address && a[2] === MEMO_PROGRAM
-      && h.numSignerAccounts === 2 && h.numReadonlySignerAccounts === 1 && h.numReadonlyNonSignerAccounts === 1
-      && ix.length === 1 && ix[0].programAddressIndex === 2 && ix[0].accountIndices?.length === 1 && ix[0].accountIndices[0] === 1;
-    if (!shapeOk) throw new ClaimError('shape', 'Not a Pixelglow claim.');
+    const programs = a.slice(2);
+    let shapeOk = msg.version === 'legacy' && a[0] === this.relayer.address && h.numSignerAccounts === 2 && h.numReadonlySignerAccounts === 1
+      && h.numReadonlyNonSignerAccounts === programs.length && programs.includes(MEMO_PROGRAM)
+      && programs.every((p) => p === MEMO_PROGRAM || p === COMPUTE_BUDGET_PROGRAM) && new Set(programs).size === programs.length;
+    let memoIx = null, seen = new Set();
+    for (const i of shapeOk ? ix : []) {
+      const prog = a[i.programAddressIndex], d = i.data || new Uint8Array();
+      if (prog === MEMO_PROGRAM && !memoIx && i.accountIndices?.length === 1 && i.accountIndices[0] === 1) { memoIx = i; continue; }
+      if (prog === COMPUTE_BUDGET_PROGRAM && !(i.accountIndices?.length) && !seen.has(d[0])) {
+        seen.add(d[0]);
+        const n = d.reduce((v, b, k) => (k ? v + BigInt(b) * 256n ** BigInt(k - 1) : v), 0n);
+        if (d[0] === 2 && d.length === 5 && n <= BigInt(CLAIM_CU_LIMIT)) continue;               // unit limit
+        if (d[0] === 3 && d.length === 9 && n <= BigInt(config.MAX_PRIORITY_MICROLAMPORTS)) continue; // unit price
+      }
+      shapeOk = false;
+    }
+    if (!shapeOk || !memoIx) throw new ClaimError('shape', 'Not a Pixelglow claim.');
 
     const session = a[1];
-    const claim = parseMemo(getUtf8Decoder().decode(ix[0].data), config.COLS, config.ROWS, config.PALETTE.length);
+    const claim = parseMemo(getUtf8Decoder().decode(memoIx.data), config.COLS, config.ROWS, config.PALETTE.length);
     if (!claim) throw new ClaimError('memo', 'Bad pixel coordinates or colour.');
 
     const sessionSig = tx.signatures[session];
@@ -82,7 +97,7 @@ export class Relay {
     const wallet = this.sessionWallet(session);
     if (!wallet) throw new ClaimError('no_session', 'Session expired. Sign in again.');
     let holder;
-    try { holder = await isHolder(wallet); } catch { throw new ClaimError('rpc_busy', 'The network is busy. Try again in a moment.'); }
+    try { holder = await isHolderFast(wallet); } catch { throw new ClaimError('rpc_busy', 'The network is busy. Try again in a moment.'); }
     if (!holder) throw new ClaimError('not_holder', `Hold at least ${config.MIN_HOLD.toLocaleString('en-US')} ${config.TOKEN_SYMBOL} to draw.`);
     if (!this.rateOk(wallet)) throw new ClaimError('rate', 'Slow down a little.');
 

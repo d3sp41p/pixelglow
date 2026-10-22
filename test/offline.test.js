@@ -59,6 +59,10 @@ test('relayer co-signs a real claim and refuses everything else', async () => {
   const ok = await s.relay.coSign(await wire(buildClaimTransaction({ relayer: s.relayer.address, session: s.session, ...BH, x: 12, y: 34, c: 5 })));
   assert.deepEqual([ok.x, ok.y, ok.c, ok.wallet], [12, 34, 5, s.wallet]);
 
+  // with a priority fee (what the site sends now) it still passes; above the cap it does not
+  const fast = await s.relay.coSign(await wire(buildClaimTransaction({ relayer: s.relayer.address, session: s.session, ...BH, x: 3, y: 4, c: 2, cuPrice: 50_000 })));
+  assert.deepEqual([fast.x, fast.y], [3, 4]);
+  await assert.rejects(s.relay.coSign(await wire(buildClaimTransaction({ relayer: s.relayer.address, session: s.session, ...BH, x: 3, y: 4, c: 2, cuPrice: 10_000_000 }))), /Not a Pixelglow claim/);
   // out-of-range pixel
   await assert.rejects(s.relay.coSign(await wire(buildClaimTransaction({ relayer: s.relayer.address, session: s.session, ...BH, x: 200, y: 0, c: 1 }))), /coordinates/);
   // someone else as fee payer
@@ -102,4 +106,36 @@ test('payouts: each epoch drips a share of the pool, by time-weighted pixels, an
   // a new wallet with no SOL account only gets paid once its cut covers the rent-exempt minimum
   p = planEpoch({ rewardPool: 0.004 * SOL, dripRate: 0.2, twa: { N: 1 }, accrued: {}, existing: new Set(), dust: 500_000 });
   assert.equal(p.pay.length, 0); assert.equal(p.nextAccrued.N, 800_000);
+});
+
+test('payouts: 20% of the pool a day keeps paying for weeks after trading stops', async () => {
+  const { planEpoch } = await import('../server/payouts.js');
+  const SOL = 1e9, perEpoch = 1 - Math.pow(0.8, 600 / 86_400), epochsPerDay = 144, all = new Set(['A']);
+  let pool = 0, accrued = {};
+  const daily = [];
+  for (let day = 1; day <= 21; day++) {
+    let paidToday = 0;
+    for (let e = 0; e < epochsPerDay; e++) {
+      if (day <= 7) pool += (10 * SOL) / epochsPerDay;          // 10 SOL of fees a day for a week, then nothing
+      const owed = Object.values(accrued).reduce((x, y) => x + y, 0);
+      const q = planEpoch({ rewardPool: pool - owed, dripRate: perEpoch, twa: { A: 1 }, accrued, existing: all, dust: 500_000 });
+      const s = q.pay.reduce((x, [, y]) => x + y, 0); pool -= s; paidToday += s; accrued = q.nextAccrued;
+    }
+    daily.push(+(paidToday / SOL).toFixed(2));
+  }
+  console.log('# paid per day (SOL):', daily.join(' '));
+  assert.ok(daily[0] > 0.8 && daily[0] < 1.3);                  // day 1: ~1 SOL out of 10 in
+  assert.ok(daily[6] > 6 && daily[6] < 9);                      // day 7: ~8 SOL as the cushion builds
+  assert.ok(daily[7] > 5 && daily[13] > 1.5 && daily[20] > 0.3); // trading stopped, payouts carry on for weeks
+});
+
+test('a claim that never confirms puts the pixel back, unless it moved on', () => {
+  const b = new Board(); b.epochStart = 0;
+  b.apply(1, 1, 3, 'A', 0);
+  const r = b.apply(1, 1, 5, 'B', 10);                    // B paints over A, then B's tx fails
+  assert.ok(b.restore(r.cell, 'B', { owner: r.prevOwner, color: r.prevColor }, 11));
+  assert.equal(b.livePixels('A'), 1); assert.equal(b.livePixels('B'), 0); assert.equal(b.colors[r.cell], 3);
+  const r2 = b.apply(2, 2, 5, 'B', 12); b.apply(2, 2, 7, 'C', 13); // C took it meanwhile: leave it alone
+  assert.equal(b.restore(r2.cell, 'B', { owner: r2.prevOwner, color: r2.prevColor }, 14), false);
+  assert.equal(b.livePixels('C'), 1);
 });

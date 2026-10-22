@@ -1,6 +1,6 @@
 // Epoch payouts (spec §2). All creator fees land in the pool wallet and belong to holders.
-// The pool is not emptied at once: every EPOCH_SEC it pays out DRIP_RATE of what it holds, split by
-// time-weighted live pixels, so rewards keep flowing evenly between busy and quiet trading.
+// The pool is not emptied at once: it pays out DRIP_PER_DAY of what it holds per day, a small slice every epoch,
+// split by time-weighted live pixels. The rest is a cushion that keeps payouts going when trading slows.
 // Optional: HOLDER_SHARE < 1 forwards that cut of each new inflow to TREASURY_ADDRESS first.
 import { address, lamports } from '@solana/kit';
 import { getTransferSolInstruction } from '@solana-program/system';

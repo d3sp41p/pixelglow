@@ -1,5 +1,6 @@
 // Shared by the browser and the server: how a claim transaction looks.
-// A claim is one legacy transaction with exactly one Memo instruction:
+// A claim is one legacy transaction with one Memo instruction, optionally preceded by the two
+// Compute Budget instructions (unit limit, unit price) that get it into the next block:
 //   fee payer  = the project's relayer (pays the network fee)
 //   signer     = the player's session key (proves who clicked)
 //   memo       = "pg1:<x>,<y>,<color>"
@@ -9,6 +10,11 @@ import {
 } from '@solana/kit';
 
 export const MEMO_PROGRAM = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
+export const COMPUTE_BUDGET_PROGRAM = 'ComputeBudget111111111111111111111111111111';
+export const CLAIM_CU_LIMIT = 22_000; // a claim uses ~19,100 compute units on mainnet (memo with one signer)
+const le = (n, bytes) => { const out = new Uint8Array(bytes); let v = BigInt(n); for (let i = 0; i < bytes; i++) { out[i] = Number(v & 255n); v >>= 8n; } return out; };
+const cuLimitIx = (units) => ({ programAddress: COMPUTE_BUDGET_PROGRAM, data: new Uint8Array([2, ...le(units, 4)]) });
+const cuPriceIx = (microLamports) => ({ programAddress: COMPUTE_BUDGET_PROGRAM, data: new Uint8Array([3, ...le(microLamports, 8)]) });
 export const MEMO_PREFIX = 'pg1:';
 
 export const encodeMemo = (x, y, c) => `${MEMO_PREFIX}${x},${y},${c}`;
@@ -22,7 +28,7 @@ export function parseMemo(text, cols, rows, colors) {
   return { x, y, c };
 }
 
-export function buildClaimTransaction({ relayer, session, blockhash, lastValidBlockHeight, x, y, c }) {
+export function buildClaimTransaction({ relayer, session, blockhash, lastValidBlockHeight, x, y, c, cuPrice = 0 }) {
   const ix = {
     programAddress: MEMO_PROGRAM,
     accounts: [{ address: session, role: AccountRole.READONLY_SIGNER }],
@@ -32,6 +38,7 @@ export function buildClaimTransaction({ relayer, session, blockhash, lastValidBl
     createTransactionMessage({ version: 'legacy' }),
     (m) => setTransactionMessageFeePayer(relayer, m),
     (m) => setTransactionMessageLifetimeUsingBlockhash({ blockhash, lastValidBlockHeight: BigInt(lastValidBlockHeight) }, m),
+    (m) => (cuPrice > 0 ? appendTransactionMessageInstruction(cuPriceIx(cuPrice), appendTransactionMessageInstruction(cuLimitIx(CLAIM_CU_LIMIT), m)) : m),
     (m) => appendTransactionMessageInstruction(ix, m),
   );
   return compileTransaction(msg);

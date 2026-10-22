@@ -31,8 +31,8 @@ async function click(p) {
   // a random walk around its home, so each bot grows a blob rather than noise
   p.x = Math.max(0, Math.min(cfg.cols - 1, p.x + (Math.random() * 6 - 3)));
   p.y = Math.max(0, Math.min(cfg.rows - 1, p.y + (Math.random() * 6 - 3)));
-  const { blockhash, lastValidBlockHeight } = await api('/api/config');
-  let tx = buildClaimTransaction({ relayer: cfg.relayer, session: p.sAddr, blockhash, lastValidBlockHeight, x: p.x | 0, y: p.y | 0, c: p.c });
+  const { blockhash, lastValidBlockHeight, cuPrice } = await api('/api/config');
+  let tx = buildClaimTransaction({ relayer: cfg.relayer, session: p.sAddr, blockhash, lastValidBlockHeight, cuPrice, x: p.x | 0, y: p.y | 0, c: p.c });
   tx = await partiallySignTransaction([p.session], tx);
   try { await api('/api/claim', { tx: getBase64EncodedWireTransaction(tx) }); p.ok++; } catch { p.fail++; }
 }
