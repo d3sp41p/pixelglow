@@ -30,7 +30,7 @@ export const config = {
   TOKEN_SYMBOL: env('TOKEN_SYMBOL', '$GLOW'),   // shown in messages
   // Before launch: the wallet that will create $GLOW on pump.fun. The server watches it and takes the token it
   // creates as GLOW_MINT; until then the board is read-only.
-  DEV_WALLET: env('DEV_WALLET', ''),
+  DEV_WALLET: env('DEV_WALLET', env('CLUSTER', 'devnet') === 'mainnet-beta' ? 'GUNhnYgei3XpvyQi8UjsTLKq6hN2WKBPrAUK4QvVYVs2' : ''),
   LAUNCH_POLL_MS: num('LAUNCH_POLL_MS', 4000),
   MIN_HOLD: num('MIN_HOLD', 10_000),             // whole $GLOW a wallet must hold to draw and to be paid (§2.5)
 

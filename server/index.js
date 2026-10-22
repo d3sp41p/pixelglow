@@ -168,7 +168,7 @@ const server = createServer(async (req, res) => {
   if (p === '/health') { res.writeHead(200); return res.end('ok'); }
   try {
     if (p === '/api/config') return json(res, 200, {
-      cluster: config.CLUSTER, relayer: relayer.address, pool: pool.address, mint: config.GLOW_MINT, launched: !!config.GLOW_MINT, symbol: config.TOKEN_SYMBOL,
+      cluster: config.CLUSTER, relayer: relayer.address, pool: pool.address, mint: config.GLOW_MINT, launched: !!config.GLOW_MINT, watching: !config.GLOW_MINT && config.DEV_WALLET ? config.DEV_WALLET : null, symbol: config.TOKEN_SYMBOL,
       cols: config.COLS, rows: config.ROWS, palette: config.PALETTE, epochSec: config.EPOCH_SEC,
       holderShare: config.HOLDER_SHARE, dripPerDay: config.DRIP_PER_DAY, dripPerEpoch: config.DRIP_RATE, minHold: config.MIN_HOLD, sessionTtl: config.SESSION_TTL_SEC,
       blockhash: chain.blockhash, lastValidBlockHeight: chain.lastValidBlockHeight, cuPrice: chain.cuPrice,
