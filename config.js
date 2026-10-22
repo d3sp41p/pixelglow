@@ -46,7 +46,7 @@ export const config = {
   SESSION_TTL_SEC: num('SESSION_TTL_SEC', 24 * 3600),
   MAX_CLAIMS_PER_SEC: num('MAX_CLAIMS_PER_SEC', 20),          // per wallet, generous: speed is the point (§2.6)
   // Priority fee per compute unit for claims, picked from recent network fees and kept inside these bounds.
-  // 22,000 units × 50,000 µ-lamports = 1,100 lamports (+11% on the 10,000 base fee); the cap is the most the relayer will pay.
+  // 30,000 units × 10,000 µ-lamports = 300 lamports (+3% on the 10,000 base fee); the cap is the most the relayer will pay.
   MIN_PRIORITY_MICROLAMPORTS: num('MIN_PRIORITY_MICROLAMPORTS', 10_000),
   MAX_PRIORITY_MICROLAMPORTS: num('MAX_PRIORITY_MICROLAMPORTS', 200_000),
   RELAYER_DAILY_TX_CAP: num('RELAYER_DAILY_TX_CAP', 200_000), // ≈ 2 SOL/day: a claim has 2 signatures = 10,000 lamports

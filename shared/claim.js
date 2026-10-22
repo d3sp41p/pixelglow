@@ -11,7 +11,7 @@ import {
 
 export const MEMO_PROGRAM = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
 export const COMPUTE_BUDGET_PROGRAM = 'ComputeBudget111111111111111111111111111111';
-export const CLAIM_CU_LIMIT = 22_000; // a claim uses ~19,100 compute units on mainnet (memo with one signer)
+export const CLAIM_CU_LIMIT = 30_000; // a claim uses 19,100–20,600 compute units on mainnet (memo with one signer)
 const le = (n, bytes) => { const out = new Uint8Array(bytes); let v = BigInt(n); for (let i = 0; i < bytes; i++) { out[i] = Number(v & 255n); v >>= 8n; } return out; };
 const cuLimitIx = (units) => ({ programAddress: COMPUTE_BUDGET_PROGRAM, data: new Uint8Array([2, ...le(units, 4)]) });
 const cuPriceIx = (microLamports) => ({ programAddress: COMPUTE_BUDGET_PROGRAM, data: new Uint8Array([3, ...le(microLamports, 8)]) });

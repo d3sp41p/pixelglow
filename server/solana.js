@@ -112,8 +112,11 @@ export async function isHolderFast(wallet) {
 // ---- sending and confirming ----
 // Every send goes to the main RPC and, in parallel, to any extra endpoints: whichever reaches the block leader first wins.
 const sendRpcs = [rpc, ...config.SEND_RPC_URLS.map((u) => createSolanaRpc(u))];
+// Counters for /api/stats, so slow clicks can be traced to the endpoint that refused them.
+export const diag = { send: sendRpcs.map((_, k) => ({ endpoint: k === 0 ? 'main' : 'extra' + k, ok: 0, limited: 0, failed: 0 })), poll429: 0, pollFailed: 0, wsFailed: 0 };
 export async function sendWire(base64Wire) {
-  const sends = sendRpcs.map((r) => r.sendTransaction(base64Wire, { encoding: 'base64', skipPreflight: true, maxRetries: 0n }).send());
+  const sends = sendRpcs.map((r, k) => r.sendTransaction(base64Wire, { encoding: 'base64', skipPreflight: true, maxRetries: 0n }).send()
+    .then((v) => { diag.send[k].ok++; return v; }, (e) => { if (/429/.test(e.message)) diag.send[k].limited++; else diag.send[k].failed++; throw e; }));
   return Promise.any(sends).catch((e) => { throw e.errors?.[0] || e; });
 }
 
@@ -134,7 +137,7 @@ export function waitForConfirmation(signature, timeoutMs = 60_000, commitment = 
       try {
         const notes = await rpcSubscriptions.signatureNotifications(signature, { commitment }).subscribe({ abortSignal: abort.signal });
         for await (const n of notes) { done(n.value.err ? { ok: false, err: n.value.err } : { ok: true, slot: Number(n.context.slot) }); break; }
-      } catch (e) { if (!abort.signal.aborted) console.warn('[confirm] subscription failed, polling instead:', e.message); }
+      } catch (e) { if (!abort.signal.aborted) { diag.wsFailed++; console.warn('[confirm] subscription failed, polling instead:', e.message); } }
     })();
   });
 }
@@ -155,7 +158,10 @@ async function pollStatuses() {
         else if ((RANK[st.confirmationStatus] || 0) >= p.rank) p.resolve({ ok: true, slot: Number(st.slot) });
       }
       pollDelay = POLL_MS;
-    } catch (e) { pollDelay = Math.min(8000, pollDelay * 2); if (!/429/.test(e.message)) console.warn('[confirm] status poll failed:', e.message); }
+    } catch (e) {
+      pollDelay = Math.min(1600, pollDelay * 2); // back off, but never so far that a click waits seconds for its answer
+      if (/429/.test(e.message)) diag.poll429++; else { diag.pollFailed++; console.warn('[confirm] status poll failed:', e.message); }
+    }
   }
   for (const [, p] of pending) if (Date.now() - p.t0 > p.timeoutMs) p.resolve({ ok: false, err: 'timeout' });
   setTimeout(pollStatuses, pollDelay).unref(); // never keeps a script alive on its own

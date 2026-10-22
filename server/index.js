@@ -9,7 +9,7 @@ import { config } from '../config.js';
 import { Board } from './board.js';
 import { ClaimError, Relay } from './relay.js';
 import { Payouts } from './payouts.js';
-import { chain, explorerTx, glowBalance, loadOrCreateKey, refreshBlockhash, sendWire, solBalance, waitForConfirmation } from './solana.js';
+import { chain, diag, explorerTx, glowBalance, loadOrCreateKey, refreshBlockhash, sendWire, solBalance, waitForConfirmation } from './solana.js';
 
 const PUBLIC = fileURLToPath(new URL('../public/', import.meta.url));
 const STATE_FILE = join(config.DATA_DIR, 'state.json');
@@ -167,7 +167,7 @@ const server = createServer(async (req, res) => {
         ...globalStats(),
       });
     }
-    if (p === '/api/stats') return json(res, 200, { ...globalStats(), latency: { landMs: median(lat.land), confirmMs: median(lat.confirm), samples: lat.land.length }, history: payouts.history.slice(0, 10).map(({ payouts: _, ...h }) => h) });
+    if (p === '/api/stats') return json(res, 200, { ...globalStats(), latency: { landMs: median(lat.land), confirmMs: median(lat.confirm), slowest: Math.max(0, ...lat.land), samples: lat.land.length }, diag, history: payouts.history.slice(0, 10).map(({ payouts: _, ...h }) => h) });
     if (p.startsWith('/api/wallet/')) {
       const w = decodeURIComponent(p.slice('/api/wallet/'.length));
       if (!isAddress(w)) return json(res, 400, { error: 'bad_address', message: 'That is not a Solana address.' });
