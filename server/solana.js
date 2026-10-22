@@ -110,15 +110,54 @@ export async function isHolderFast(wallet) {
 }
 
 // ---- sending and confirming ----
-// Every send goes to the main RPC and, in parallel, to any extra endpoints: whichever reaches the block leader first wins.
-const sendRpcs = [rpc, ...config.SEND_RPC_URLS.map((u) => createSolanaRpc(u))];
+// Dispatcher: every endpoint has its own send rate (free plans allow ~1 sendTransaction a second). Each send goes to an
+// endpoint with room left, round-robin; when all are full it waits for the first free slot instead of being refused.
+// A rate-limit answer puts that endpoint on a 1 s cool-down and the send moves to the next one.
+const hostOf = (u) => { try { return new URL(u).hostname.split('.').slice(-2).join('.'); } catch { return 'rpc'; } };
+const endpoints = [
+  { url: config.RPC_URL, rpc, rps: config.SEND_RPS },
+  ...config.SEND_RPC_URLS.map(({ url, rps }) => ({ url, rpc: createSolanaRpc(url), rps })),
+].map((e, k) => ({ ...e, name: `${k}:${hostOf(e.url)}`, tokens: 1, at: Date.now(), coolUntil: 0 }));
 // Counters for /api/stats, so slow clicks can be traced to the endpoint that refused them.
-export const diag = { send: sendRpcs.map((_, k) => ({ endpoint: k === 0 ? 'main' : 'extra' + k, ok: 0, limited: 0, failed: 0 })), poll429: 0, pollFailed: 0, wsFailed: 0, lastErrors: [] };
+export const diag = { send: endpoints.map((e) => ({ endpoint: e.name, rps: e.rps, ok: 0, limited: 0, failed: 0 })), queuedMs: 0, poll429: 0, pollFailed: 0, wsFailed: 0, lastErrors: [] };
 const noteErr = (where, e) => { const m = `${where}: ${(e.context?.__code ?? '')} ${e.message}`.slice(0, 220); if (!diag.lastErrors.includes(m)) { diag.lastErrors.unshift(m); diag.lastErrors.length = Math.min(diag.lastErrors.length, 6); } };
-export async function sendWire(base64Wire) {
-  const sends = sendRpcs.map((r, k) => r.sendTransaction(base64Wire, { encoding: 'base64', skipPreflight: true, maxRetries: 0n }).send()
-    .then((v) => { diag.send[k].ok++; return v; }, (e) => { if (/429/.test(e.message)) diag.send[k].limited++; else diag.send[k].failed++; noteErr(diag.send[k].endpoint, e); throw e; }));
-  return Promise.any(sends).catch((e) => { throw e.errors?.[0] || e; });
+const refill = (e, now) => { e.tokens = Math.min(Math.max(1, e.rps), e.tokens + ((now - e.at) / 1000) * e.rps); e.at = now; };
+let rr = 0;
+function takeSlot(avoid) {
+  const now = Date.now();
+  for (let k = 0; k < endpoints.length; k++) {
+    const i = (rr + k) % endpoints.length, e = endpoints[i];
+    refill(e, now);
+    if (e.name === avoid && endpoints.length > 1) continue;
+    if (now >= e.coolUntil && e.tokens >= 1) { e.tokens -= 1; rr = i + 1; return i; }
+  }
+  return -1;
+}
+const isRateLimit = (e) => /429|rate.?limit|too many/i.test(e.message || '');
+// Returns the endpoint name that accepted the transaction.
+export async function sendWire(base64Wire, avoid = null) {
+  const t0 = Date.now();
+  let lastErr = null;
+  for (let attempt = 0; attempt < endpoints.length + 2; attempt++) {
+    let i;
+    while ((i = takeSlot(avoid)) < 0) {
+      if (Date.now() - t0 > 4000) throw lastErr || new Error('all RPC endpoints are at their send limit');
+      await sleep(25);
+    }
+    diag.queuedMs = Math.max(diag.queuedMs * 0.9, Date.now() - t0); // decaying peak of time spent waiting for a slot
+    const e = endpoints[i], d = diag.send[i];
+    try {
+      await e.rpc.sendTransaction(base64Wire, { encoding: 'base64', skipPreflight: true, maxRetries: 0n }).send();
+      d.ok++;
+      return e.name;
+    } catch (err) {
+      lastErr = err; noteErr(e.name, err);
+      if (isRateLimit(err)) { d.limited++; e.coolUntil = Date.now() + 1000; e.tokens = 0; avoid = e.name; continue; }
+      d.failed++;
+      throw err;
+    }
+  }
+  throw lastErr;
 }
 
 // Waiting for a transaction: a WebSocket signature subscription (fast, cheap on rate limits), with one batched

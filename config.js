@@ -14,8 +14,12 @@ export const config = {
   CLUSTER: env('CLUSTER', 'devnet'),
   RPC_URL: env('RPC_URL', 'https://api.devnet.solana.com'),
   RPC_WS_URL: env('RPC_WS_URL', 'wss://api.devnet.solana.com'),
-  // Extra endpoints every claim is also sent to, in parallel (comma-separated). Default: the public endpoint of the cluster.
-  SEND_RPC_URLS: env('SEND_RPC_URLS', env('CLUSTER', 'devnet') === 'mainnet-beta' ? 'https://api.mainnet-beta.solana.com' : '').split(',').map((s) => s.trim()).filter(Boolean),
+  // Transactions per second RPC_URL accepts for sending (Helius free: 1, Developer: 5, Business: 50).
+  SEND_RPS: num('SEND_RPS', 1),
+  // More endpoints to spread sends over, comma-separated, each optionally with its own rate: "url|rps".
+  // Default on mainnet: the public endpoint at a cautious 0.5/s (it limits by IP, and the host's IP is shared).
+  SEND_RPC_URLS: env('SEND_RPC_URLS', env('CLUSTER', 'devnet') === 'mainnet-beta' ? 'https://api.mainnet-beta.solana.com|0.5' : '')
+    .split(',').map((s) => s.trim()).filter(Boolean).map((s) => { const [url, rps] = s.split('|'); return { url: url.trim(), rps: Number(rps) || 1 }; }),
   PORT: num('PORT', 8787),
   // Sites allowed to call the API from a browser, comma-separated (e.g. https://pixelglow.vercel.app). '*' = any.
   ALLOWED_ORIGINS: env('ALLOWED_ORIGINS', '*').split(',').map((s) => s.trim()).filter(Boolean),
