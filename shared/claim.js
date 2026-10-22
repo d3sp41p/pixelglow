@@ -46,4 +46,4 @@ export function buildClaimTransaction({ relayer, session, blockhash, lastValidBl
 
 // The text the player's wallet signs once to authorise a session key (§1.3).
 export const sessionMessage = ({ wallet, session, expires, nonce }) =>
-  `Pixelglow session\n\nI allow this session key to claim pixels for my wallet. It cannot move funds.\n\nwallet: ${wallet}\nsession: ${session}\nexpires: ${new Date(expires * 1000).toISOString()}\nnonce: ${nonce}`;
+  `a/place session\n\nI allow this session key to claim pixels for my wallet. It cannot move funds.\n\nwallet: ${wallet}\nsession: ${session}\nexpires: ${new Date(expires * 1000).toISOString()}\nnonce: ${nonce}`;

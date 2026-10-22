@@ -62,12 +62,12 @@ test('relayer co-signs a real claim and refuses everything else', async () => {
   // with a priority fee (what the site sends now) it still passes; above the cap it does not
   const fast = await s.relay.coSign(await wire(buildClaimTransaction({ relayer: s.relayer.address, session: s.session, ...BH, x: 3, y: 4, c: 2, cuPrice: 50_000 })));
   assert.deepEqual([fast.x, fast.y], [3, 4]);
-  await assert.rejects(s.relay.coSign(await wire(buildClaimTransaction({ relayer: s.relayer.address, session: s.session, ...BH, x: 3, y: 4, c: 2, cuPrice: 10_000_000 }))), /Not a Pixelglow claim/);
+  await assert.rejects(s.relay.coSign(await wire(buildClaimTransaction({ relayer: s.relayer.address, session: s.session, ...BH, x: 3, y: 4, c: 2, cuPrice: 10_000_000 }))), /Not an a\/place claim/);
   // out-of-range pixel
   await assert.rejects(s.relay.coSign(await wire(buildClaimTransaction({ relayer: s.relayer.address, session: s.session, ...BH, x: 200, y: 0, c: 1 }))), /coordinates/);
   // someone else as fee payer
   const other = await getAddressFromPublicKey((await generateKeyPair()).publicKey);
-  await assert.rejects(s.relay.coSign(await wire(buildClaimTransaction({ relayer: other, session: s.session, ...BH, x: 1, y: 1, c: 1 }))), /Not a Pixelglow claim/);
+  await assert.rejects(s.relay.coSign(await wire(buildClaimTransaction({ relayer: other, session: s.session, ...BH, x: 1, y: 1, c: 1 }))), /Not an a\/place claim/);
   // not signed by the session key
   await assert.rejects(s.relay.coSign(await wire(buildClaimTransaction({ relayer: s.relayer.address, session: s.session, ...BH, x: 1, y: 1, c: 1 }), [])), /did not sign/);
   // unknown session
@@ -78,7 +78,7 @@ test('relayer co-signs a real claim and refuses everything else', async () => {
     (m) => setTransactionMessageLifetimeUsingBlockhash({ blockhash: BH.blockhash, lastValidBlockHeight: 100n }, m),
     (m) => appendTransactionMessageInstruction({ programAddress: MEMO_PROGRAM, accounts: [{ address: s.session, role: AccountRole.READONLY_SIGNER }], data: getUtf8Encoder().encode('pg1:1,1,1') }, m),
     (m) => appendTransactionMessageInstruction(getTransferSolInstruction({ source: createNoopSigner(s.relayer.address), destination: address(s.session), amount: lamports(1_000_000_000n) }), m));
-  await assert.rejects(s.relay.coSign(await wire(compileTransaction(drain))), /Not a Pixelglow claim/);
+  await assert.rejects(s.relay.coSign(await wire(compileTransaction(drain))), /Not an a\/place claim/);
 });
 
 test('payouts: each epoch drips a share of the pool, by time-weighted pixels, and nothing is lost', async () => {

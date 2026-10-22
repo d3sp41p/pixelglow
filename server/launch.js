@@ -62,7 +62,7 @@ export class LaunchWatcher {
       if (mint) {
         this.state = { ...this.state, mint, sig: s.signature, at: new Date().toISOString() };
         this.save();
-        console.log(`[launch] $GLOW launched: ${mint} (${s.signature})`);
+        console.log(`[launch] a/place launched: ${mint} (${s.signature})`);
         this.onLaunch(mint);
         return;
       }

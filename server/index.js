@@ -75,7 +75,7 @@ const launch = new LaunchWatcher((mint) => {
 });
 if (!config.GLOW_MINT && launch.mint) config.GLOW_MINT = launch.mint;
 launch.start();
-if (!config.GLOW_MINT) console.log(config.DEV_WALLET ? '[launch] board is read-only until $GLOW launches' : '[!] neither GLOW_MINT nor DEV_WALLET is set: the board stays read-only');
+if (!config.GLOW_MINT) console.log(config.DEV_WALLET ? '[launch] board is read-only until a/place launches' : '[!] neither GLOW_MINT nor DEV_WALLET is set: the board stays read-only');
 
 // ---- epochs ----
 setInterval(() => {
@@ -213,7 +213,7 @@ wss.on('connection', (ws) => {
 });
 
 server.listen(config.PORT, async () => {
-  console.log(`Pixelglow on http://localhost:${config.PORT}  (${config.CLUSTER})`);
+  console.log(`a/place on http://localhost:${config.PORT}  (${config.CLUSTER})`);
   console.log(`  relayer ${relayer.address}  ${(await solBalance(relayer.address).catch(() => 0)) / 1e9} SOL`);
   console.log(`  pool    ${pool.address}  ${(await solBalance(pool.address).catch(() => 0)) / 1e9} SOL`);
   console.log(`  mint    ${config.GLOW_MINT || '(waiting for launch' + (config.DEV_WALLET ? ' by ' + config.DEV_WALLET : '') + ')'}   epoch ${config.EPOCH_SEC}s`);
