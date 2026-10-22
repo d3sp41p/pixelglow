@@ -88,7 +88,8 @@ export class LaunchWatcher {
     if (this.seen.has(signature) || this.launched()) return;
     let tx = null;
     for (let k = 0; k < 6 && !tx; k++) {
-      tx = await rpc.getTransaction(signature, { encoding: 'jsonParsed', maxSupportedTransactionVersion: 0, commitment: 'confirmed' }).send();
+      // version 1 transactions are live on mainnet; asking for at most 0 makes the RPC refuse them
+      tx = await rpc.getTransaction(signature, { encoding: 'jsonParsed', maxSupportedTransactionVersion: 1, commitment: 'confirmed' }).send();
       if (!tx) await sleep(400);
     }
     if (!tx) return; // not visible yet; the scan will come back to it
@@ -117,7 +118,12 @@ export class LaunchWatcher {
     for (const s of [...all].reverse()) { // oldest first
       if (this.launched()) return;
       if (s.err || (s.blockTime && Number(s.blockTime) < this.state.watchFrom)) continue;
-      await this.inspect(s.signature, 'scan');
+      try { await this.inspect(s.signature, 'scan'); }
+      catch (e) {
+        if (e?.context?.statusCode === 429 || /429|too many/i.test(e.message || '')) throw e; // rate limited: retry this batch later
+        this.seen.add(s.signature); // unreadable for another reason: skip it rather than stall the scan
+        console.warn('[launch] skipped', s.signature, e.message);
+      }
       this.status.scanned++;
     }
     if (all.length) { this.state.newest = all[0].signature; this.save(); } // only once everything up to it was read
