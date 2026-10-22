@@ -26,7 +26,8 @@ export const config = {
 
   // ---- token ----
   // Filled in by `npm run setup` on devnet. On mainnet: the real $GLOW mint.
-  GLOW_MINT: env('GLOW_MINT', ''),
+  // a/place on mainnet (launched 2026-10-22 from the dev wallet via J7).
+  GLOW_MINT: env('GLOW_MINT', env('CLUSTER', 'devnet') === 'mainnet-beta' ? '6sJNUeK3rQU8PVzz4n1dQzdmTWmnftbTYfPLekXDpump' : ''),
   TOKEN_SYMBOL: env('TOKEN_SYMBOL', 'a/place'),   // shown in messages
   // Before launch: the wallet that will create $GLOW on pump.fun. The server watches it and takes the token it
   // creates as GLOW_MINT; until then the board is read-only.
