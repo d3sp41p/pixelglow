@@ -1,5 +1,6 @@
 import os, re
-os.chdir(r'C:\Users\MSI\OneDrive\Desktop\ДРУГОЕ\димка пиксели\app\public')
+# Regenerates public/alpenglow.html (the Alpenglow trial theme) from public/index.html. Run: py scripts/make-alpenglow.py
+os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'public'))
 s = open('index.html', encoding='utf-8').read()
 
 def sub(a, b):
