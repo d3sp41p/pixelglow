@@ -180,6 +180,8 @@
   [data-ui].fr .tx .ms{color:var(--glow);font-weight:600}
 
   .paygrid{display:grid;grid-template-columns:5fr 7fr;gap:var(--gap);align-items:stretch}
+  .paygrid>*{min-width:0} /* a wide table must not stretch the column past the screen */
+  [data-ui].hist #hist{overflow-x:auto}
   .rules{background:var(--surface);padding:22px;display:flex;flex-direction:column;gap:18px}
   .figs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
   .figs div{background:var(--bg);padding:16px}
