@@ -40,7 +40,7 @@ export const config = {
   // ---- sessions & relayer (§1.3, fee payer = project) ----
   SESSION_TTL_SEC: num('SESSION_TTL_SEC', 24 * 3600),
   MAX_CLAIMS_PER_SEC: num('MAX_CLAIMS_PER_SEC', 20),          // per wallet, generous: speed is the point (§2.6)
-  RELAYER_DAILY_TX_CAP: num('RELAYER_DAILY_TX_CAP', 200_000), // ≈ 1 SOL/day of network fees at 5000 lamports each
+  RELAYER_DAILY_TX_CAP: num('RELAYER_DAILY_TX_CAP', 200_000), // ≈ 2 SOL/day: a claim has 2 signatures = 10,000 lamports
 
   // ---- files ----
   // devnet keys live in keys/, every other cluster in keys/<cluster>/ so they can never be mixed up
