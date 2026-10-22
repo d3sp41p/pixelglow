@@ -32,10 +32,11 @@ export const config = {
 
   // ---- economy (§2) ----
   EPOCH_SEC: num('EPOCH_SEC', 600),              // 10 minutes (§2.3)
-  HOLDER_SHARE: num('HOLDER_SHARE', 0.80),       // 80% of the epoch pool to holders, 20% forwarded to the treasury (§2.2)
+  HOLDER_SHARE: num('HOLDER_SHARE', 1.0),        // share of every fee that goes into the holders' reward pool (1 = all of it)
+  DRIP_RATE: num('DRIP_RATE', 0.20),             // share of the reward pool paid out each epoch; the rest waits for later epochs
   DUST_LAMPORTS: num('DUST_LAMPORTS', 500_000),  // 0.0005 SOL: smaller payouts accrue to the next epoch (§2.6)
   POOL_RESERVE_LAMPORTS: num('POOL_RESERVE_LAMPORTS', 1_000_000), // kept in the pool wallet so it stays rent-exempt; payout gas is paid by the relayer
-  TREASURY_ADDRESS: env('TREASURY_ADDRESS', ''), // where the treasury share is forwarded; empty = keep it in the pool wallet
+  TREASURY_ADDRESS: env('TREASURY_ADDRESS', ''), // where the (1 - HOLDER_SHARE) cut of new fees goes; empty = it stays in the pool
 
   // ---- sessions & relayer (§1.3, fee payer = project) ----
   SESSION_TTL_SEC: num('SESSION_TTL_SEC', 24 * 3600),

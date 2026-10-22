@@ -49,14 +49,14 @@ function globalStats() {
   stats.recent = stats.recent.filter((t) => now - t < 5000);
   return {
     t: 'stats', live: board.live, players: board.top(1e9).length, txTotal: stats.txTotal, tps: +(stats.recent.length / 5).toFixed(1),
-    epoch: payouts.epoch, epochEnd: payouts.epochEnd, totalPaid: payouts.totalPaid, pool: lastPool,
+    epoch: payouts.epoch, epochEnd: payouts.epochEnd, totalPaid: payouts.totalPaid, pool: lastPool, next: nextPayout, drip: config.DRIP_RATE,
     top: board.top(5),
   };
 }
-let lastPool = 0;
+let lastPool = 0, nextPayout = 0;
 // On the very first start this fixes the pool's starting balance: only SOL arriving after it counts as fees.
-try { lastPool = (await payouts.currentPool()).pool; } catch (e) { console.warn('[pool] first balance read failed:', e.message); }
-setInterval(async () => { try { lastPool = (await payouts.currentPool()).pool; } catch {} }, 30_000);
+try { ({ pool: lastPool, next: nextPayout } = await payouts.currentPool()); } catch (e) { console.warn('[pool] first balance read failed:', e.message); }
+setInterval(async () => { try { ({ pool: lastPool, next: nextPayout } = await payouts.currentPool()); } catch {} }, 30_000);
 setInterval(() => broadcast(globalStats()), 1000);
 
 // ---- blockhash for clients ----
@@ -71,7 +71,7 @@ await blockhashLoop();
 setInterval(() => {
   if (Date.now() / 1000 >= payouts.epochEnd && !payouts.running) {
     payouts.run((report) => {
-      console.log(`[epoch ${report.epoch}] pool ${report.pool / 1e9} SOL, paid ${report.paid / 1e9} SOL to ${report.holders}, carried ${report.carried / 1e9}`);
+      console.log(`[epoch ${report.epoch}] in ${report.inflow / 1e9} SOL, pool ${report.pool / 1e9}, paid ${report.paid / 1e9} SOL to ${report.holders}`);
       broadcast({ t: 'epoch', ...report, epochEnd: payouts.epochEnd });
       save();
     });
@@ -135,7 +135,7 @@ const server = createServer(async (req, res) => {
     if (p === '/api/config') return json(res, 200, {
       cluster: config.CLUSTER, relayer: relayer.address, pool: pool.address, mint: config.GLOW_MINT, symbol: config.TOKEN_SYMBOL,
       cols: config.COLS, rows: config.ROWS, palette: config.PALETTE, epochSec: config.EPOCH_SEC,
-      holderShare: config.HOLDER_SHARE, minHold: config.MIN_HOLD, sessionTtl: config.SESSION_TTL_SEC,
+      holderShare: config.HOLDER_SHARE, dripRate: config.DRIP_RATE, minHold: config.MIN_HOLD, sessionTtl: config.SESSION_TTL_SEC,
       blockhash: chain.blockhash, lastValidBlockHeight: chain.lastValidBlockHeight,
     });
     if (p === '/api/board') {

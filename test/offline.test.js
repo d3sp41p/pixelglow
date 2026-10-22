@@ -76,3 +76,30 @@ test('relayer co-signs a real claim and refuses everything else', async () => {
     (m) => appendTransactionMessageInstruction(getTransferSolInstruction({ source: createNoopSigner(s.relayer.address), destination: address(s.session), amount: lamports(1_000_000_000n) }), m));
   await assert.rejects(s.relay.coSign(await wire(compileTransaction(drain))), /Not a Pixelglow claim/);
 });
+
+test('payouts: each epoch drips a share of the pool, by time-weighted pixels, and nothing is lost', async () => {
+  const { planEpoch } = await import('../server/payouts.js');
+  const SOL = 1e9, all = new Set(['A', 'B', 'C']);
+  // epoch 1: 1 SOL in the pool, 20% drips: A held 3x what B held, C held a tiny bit
+  let p = planEpoch({ rewardPool: 1 * SOL, dripRate: 0.2, twa: { A: 300, B: 100, C: 0.2 }, accrued: {}, existing: all, dust: 500_000 });
+  assert.equal(p.budget, 0.2 * SOL);
+  const paid = Object.fromEntries(p.pay);
+  assert.ok(Math.abs(paid.A - 0.15 * SOL) < 1_000_000 && Math.abs(paid.B - 0.05 * SOL) < 1_000_000);
+  assert.ok(!('C' in paid) && p.nextAccrued.C > 0);               // C's cut is dust: owed, not lost
+  // nobody on the board: nothing leaves, the pool simply waits
+  p = planEpoch({ rewardPool: 0.8 * SOL, dripRate: 0.2, twa: {}, accrued: {}, existing: all });
+  assert.equal(p.pay.length, 0);
+  // over many epochs with steady holders the whole pool reaches them
+  // (the wallet balance keeps what is owed as dust apart, exactly like rewardPoolOf does)
+  let wallet = 1 * SOL, accrued = {}, out = 0;
+  for (let e = 0; e < 60; e++) {
+    const owed = Object.values(accrued).reduce((x, y) => x + y, 0);
+    const q = planEpoch({ rewardPool: wallet - owed, dripRate: 0.2, twa: { A: 1 }, accrued, existing: all, dust: 500_000 });
+    const s = q.pay.reduce((x, [, y]) => x + y, 0); out += s; wallet -= s; accrued = q.nextAccrued;
+  }
+  assert.ok(out > 0.999 * SOL, `paid ${out}`);
+  assert.ok(wallet < 500_000 * 5, `left ${wallet}`);                  // only a dust-sized tail waits for the next fees
+  // a new wallet with no SOL account only gets paid once its cut covers the rent-exempt minimum
+  p = planEpoch({ rewardPool: 0.004 * SOL, dripRate: 0.2, twa: { N: 1 }, accrued: {}, existing: new Set(), dust: 500_000 });
+  assert.equal(p.pay.length, 0); assert.equal(p.nextAccrued.N, 800_000);
+});

@@ -109,12 +109,12 @@ function noteMs(ms) {
 let lastHistory = [];
 function renderHistory(h) {
   if (h) lastHistory = h;
-  const rows = lastHistory.filter((e) => e.pool > 0 || e.paid > 0 || e.carried > 0).slice(0, 7);
+  const rows = lastHistory.filter((e) => e.pool > 0 || e.paid > 0).slice(0, 7);
   // the epoch in progress is always the first row, so the table is never empty
-  const now = stats ? `<tr class="cur"><td>#${stats.epoch} <span>now</span></td><td class="n">${sol(stats.pool || 0, 4)} SOL</td><td class="n">—</td><td class="n">${stats.players || 0}</td><td>in progress</td></tr>` : '';
+  const now = stats ? `<tr class="cur"><td>#${stats.epoch} <span>now</span></td><td class="n">${sol(stats.pool || 0, 4)} SOL</td><td class="n">~${sol(stats.next || 0, 4)} SOL</td><td class="n">${stats.players || 0}</td><td>in progress</td></tr>` : '';
   $('hist').innerHTML = `<table><thead><tr><th>Epoch</th><th class="n">Pool</th><th class="n">Paid out</th><th class="n">Holders</th><th>Transaction</th></tr></thead><tbody>${now}${rows.map((e) =>
     `<tr><td>#${e.epoch}</td><td class="n">${sol(e.pool, 4)} SOL</td><td class="n">${e.paid ? sol(e.paid, 4) + ' SOL' : '—'}</td><td class="n">${e.holders || 0}</td><td>${
-      e.sigs && e.sigs[0] ? `<a href="${explorer(e.sigs[0])}" target="_blank" rel="noopener">${short(e.sigs[0])} ↗</a>` : e.carried ? 'carried over' : '—'}</td></tr>`).join('')}</tbody></table>`;
+      e.sigs && e.sigs[0] ? `<a href="${explorer(e.sigs[0])}" target="_blank" rel="noopener">${short(e.sigs[0])} ↗</a>`  : e.paid ? '—' : 'nobody on the board'}</td></tr>`).join('')}</tbody></table>`;
 }
 async function loadHistory() { try { renderHistory((await api('/api/stats')).history); } catch {} }
 const live = $('faq-live');
@@ -126,6 +126,7 @@ if (cfg.mint && cfg.mint.toUpperCase() !== 'SOL') $('mint-addr').innerHTML = `<a
 function onStats(s) {
   stats = s;
   $('s-pool').innerHTML = sol(s.pool || 0, 3) + '<small>SOL</small>';
+  $('s-next').innerHTML = sol(s.next || 0, 4) + '<small>SOL</small>';
   $('s-paid').innerHTML = sol(s.totalPaid || 0, 3) + '<small>SOL</small>';
   $('s-total').textContent = fmt(s.live || 0);
   $('s-players').textContent = fmt(s.players || 0);
