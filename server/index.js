@@ -182,7 +182,8 @@ const server = createServer(async (req, res) => {
         ...globalStats(),
       });
     }
-    if (p === '/api/stats') return json(res, 200, { ...globalStats(), latency: { landMs: median(lat.land), confirmMs: median(lat.confirm), slowest: Math.max(0, ...lat.land), samples: lat.land.length }, diag, traces, slot: slotNow, history: payouts.history.slice(0, 10).map(({ payouts: _, ...h }) => h) });
+    if (p === '/api/stats') return json(res, 200, { ...globalStats(), latency: { landMs: median(lat.land), confirmMs: median(lat.confirm), slowest: Math.max(0, ...lat.land), samples: lat.land.length }, diag, traces, slot: slotNow,
+      launch: { mint: config.GLOW_MINT || null, watching: config.GLOW_MINT ? null : config.DEV_WALLET || null, ...launch.status, sig: launch.state.sig || null }, history: payouts.history.slice(0, 10).map(({ payouts: _, ...h }) => h) });
     if (p.startsWith('/api/wallet/')) {
       const w = decodeURIComponent(p.slice('/api/wallet/'.length));
       if (!isAddress(w)) return json(res, 400, { error: 'bad_address', message: 'That is not a Solana address.' });

@@ -18,7 +18,7 @@ export function findLaunchedMint(tx, dev) {
   if (!signers.includes(dev)) return null;
   const logs = tx.meta?.logMessages || [];
   if (!logs.some((l) => l.startsWith(`Program ${PUMP_PROGRAM} invoke`))) return null;
-  if (!logs.some((l) => /^Program log: Instruction: Create(V2)?$/.test(l))) return null; // not a buy or a sell
+  if (!logs.some((l) => /^Program log: Instruction: Create(V\d+)?$/.test(l))) return null; // Create, CreateV2, … — not a buy or a sell
   const all = [...msg.instructions, ...(tx.meta?.innerInstructions || []).flatMap((i) => i.instructions)];
   for (const ix of all) {
     if (ix.parsed && /^initializeMint2?$/.test(ix.parsed.type) && ix.parsed.info?.mint) return ix.parsed.info.mint;
@@ -34,6 +34,7 @@ export class LaunchWatcher {
     // Only launches after the watch began count, so an old token in the dev wallet's history is never picked up.
     if (this.state.watchFrom == null) this.state.watchFrom = Math.floor(Date.now() / 1000) - 600;
     this.seen = new Set();
+    this.status = { lastCheck: null, lastError: null, checks: 0 }; // shown in /api/stats
   }
 
   save() { writeFileSync(this.file, JSON.stringify(this.state, null, 2)); }
@@ -47,7 +48,8 @@ export class LaunchWatcher {
     console.log(`[launch] watching ${config.DEV_WALLET} for a pump.fun launch`);
     while (!this.state.mint && !config.GLOW_MINT) {
       await sleep(config.LAUNCH_POLL_MS);
-      try { await this.check(); } catch (e) { console.warn('[launch] check failed:', e.message); }
+      try { await this.check(); this.status.lastCheck = new Date().toISOString(); this.status.checks++; this.status.lastError = null; }
+      catch (e) { this.status.lastError = e.message.slice(0, 160); console.warn('[launch] check failed:', e.message); }
     }
   }
 
