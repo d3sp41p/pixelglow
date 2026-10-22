@@ -5,7 +5,7 @@ import { webcrypto } from 'node:crypto';
 import {
   address, appendTransactionMessageInstructions, createKeyPairFromBytes, createKeyPairFromPrivateKeyBytes,
   createSignerFromKeyPair, createSolanaRpc, createSolanaRpcSubscriptions, createTransactionMessage, getAddressFromPublicKey,
-  getBase64EncodedWireTransaction, getSignatureFromTransaction, pipe, setTransactionMessageFeePayerSigner,
+  getBase58Encoder, getBase64EncodedWireTransaction, getSignatureFromTransaction, pipe, setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash, signTransactionMessageWithSigners,
 } from '@solana/kit';
 import { config } from '../config.js';
@@ -14,18 +14,30 @@ export const rpc = createSolanaRpc(config.RPC_URL);
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---- keys (solana-keygen JSON format: 64 bytes, secret seed + public key) ----
-// On a host without our key files (Railway) the key comes from an env var: RELAYER_KEY, POOL_KEY, …
-// holding the same 64-number JSON array as the key file.
+// On a host without our key files (Render) the key comes from an env var: RELAYER_KEY, POOL_KEY, …
+// holding either the 64-number JSON array of a key file or the base58 private key Phantom exports.
+const keyBytes = (text) => {
+  const t = text.trim();
+  const bytes = t.startsWith('[') ? new Uint8Array(JSON.parse(t)) : new Uint8Array(getBase58Encoder().encode(t));
+  if (bytes.length !== 64) throw new Error(`a private key must be 64 bytes, got ${bytes.length}`);
+  return bytes;
+};
 export async function loadOrCreateKey(name) {
-  const fromEnv = process.env[`${name.toUpperCase().replace(/-/g, '_')}_KEY`];
+  const envName = `${name.toUpperCase().replace(/-/g, '_')}_KEY`, fromEnv = process.env[envName];
   if (fromEnv) {
-    const keyPair = await createKeyPairFromBytes(new Uint8Array(JSON.parse(fromEnv)));
+    let keyPair;
+    try { keyPair = await createKeyPairFromBytes(keyBytes(fromEnv)); }
+    catch (e) { throw new Error(`${envName} is not a valid Solana private key (${e.message})`); }
     const signer = await createSignerFromKeyPair(keyPair);
     return { keyPair, signer, address: signer.address };
   }
-  mkdirSync(config.KEYS_DIR, { recursive: true });
   const file = join(config.KEYS_DIR, `${name}.json`);
+  if (!existsSync(file) && config.CLUSTER !== 'devnet') {
+    // never invent a money key on a real network: its owner must create it and hand it over
+    throw new Error(`${envName} is not set. On ${config.CLUSTER} the ${name} wallet must be created by its owner and its private key put in ${envName}.`);
+  }
   if (!existsSync(file)) {
+    mkdirSync(config.KEYS_DIR, { recursive: true });
     const seed = webcrypto.getRandomValues(new Uint8Array(32));
     const kp = await createKeyPairFromPrivateKeyBytes(seed, true);
     const pub = new Uint8Array(await webcrypto.subtle.exportKey('raw', kp.publicKey));

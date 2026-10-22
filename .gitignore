@@ -9,4 +9,3 @@ railway.env
 # build output
 public/app.js
 keys-e2e/
-mainnet.env
