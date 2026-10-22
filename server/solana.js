@@ -214,13 +214,13 @@ pollStatuses();
 
 // The current slot, from one subscription: lets each claim report how many slots it took to land.
 export const slotNow = { slot: 0, at: 0 };
-(async function trackSlots() {
+export function startSlotTracking() { (async function trackSlots() {
   try {
     const notes = await rpcSubscriptions.slotNotifications().subscribe({ abortSignal: new AbortController().signal });
     for await (const n of notes) { slotNow.slot = Number(n.slot); slotNow.at = Date.now(); }
   } catch (e) { console.warn('[slots] subscription ended:', e.message); }
   setTimeout(trackSlots, 3000).unref();
-})();
+})(); }
 
 // Build, sign with the given signers, send and wait. Used for payouts and setup scripts.
 export async function sendInstructions(feePayer, instructions) {

@@ -9,7 +9,7 @@ import { config } from '../config.js';
 import { Board } from './board.js';
 import { ClaimError, Relay } from './relay.js';
 import { Payouts } from './payouts.js';
-import { chain, diag, slotNow, explorerTx, glowBalance, loadOrCreateKey, refreshBlockhash, sendWire, solBalance, waitForConfirmation } from './solana.js';
+import { chain, diag, slotNow, startSlotTracking, explorerTx, glowBalance, loadOrCreateKey, refreshBlockhash, sendWire, solBalance, waitForConfirmation } from './solana.js';
 
 const PUBLIC = fileURLToPath(new URL('../public/', import.meta.url));
 const STATE_FILE = join(config.DATA_DIR, 'state.json');
@@ -66,6 +66,7 @@ async function blockhashLoop() {
   setTimeout(blockhashLoop, 15_000);
 }
 await blockhashLoop();
+startSlotTracking();
 
 // ---- epochs ----
 setInterval(() => {
